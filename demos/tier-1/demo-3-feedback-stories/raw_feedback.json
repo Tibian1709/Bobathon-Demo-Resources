@@ -1,0 +1,42 @@
+[
+  {
+    "id": "FB-1042",
+    "partner_name": "Nexus Managed Services",
+    "partner_tier": "Gold",
+    "submission_date": "2024-10-18",
+    "feedback_channel": "Marketplace Portal In-App Survey",
+    "rating": 2,
+    "category": "Billing & Reconciliation",
+    "comment": "It takes our finance team hours to reconcile multi-tenant Azure and M365 usage every billing cycle. We receive separate PDF invoices for each client tenant. We desperately need a single consolidated CSV and JSON export API that maps cloud usage directly to our internal customer IDs with custom cost center tags."
+  },
+  {
+    "id": "FB-1089",
+    "partner_name": "CloudWorks IT Group",
+    "partner_tier": "Platinum",
+    "submission_date": "2024-10-21",
+    "feedback_channel": "Executive Quarterly Business Review",
+    "rating": 3,
+    "category": "Billing & Invoicing",
+    "comment": "When customers upgrade licenses mid-billing cycle (e.g., jumping from M365 Business Standard to Business Premium on day 14 of the month), the prorated charge breakdown is completely opaque. We need line-item daily proration visibility on invoices so we don't get disputed bills from our end-clients."
+  },
+  {
+    "id": "FB-1104",
+    "partner_name": "Integrity Tech Solutions",
+    "partner_tier": "Silver",
+    "submission_date": "2024-10-22",
+    "feedback_channel": "Support Ticket #48291",
+    "rating": 2,
+    "category": "Automation & Integration",
+    "comment": "Can you please provide a webhook notification whenever an invoice is generated and ready for download? Right now our billing automation bot has to poll your API every 30 minutes on the 1st of every month, which triggers your rate limit."
+  },
+  {
+    "id": "FB-1120",
+    "partner_name": "Vanguard Systems",
+    "partner_tier": "Gold",
+    "submission_date": "2024-10-25",
+    "feedback_channel": "Partner Advisory Council",
+    "rating": 3,
+    "category": "Reporting",
+    "comment": "We want scheduled automated delivery of billing reports directly to an AWS S3 bucket or Azure Blob container in Parquet or CSV format so our PowerBI dashboards can ingest it without human intervention."
+  }
+]

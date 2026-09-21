@@ -1,0 +1,34 @@
+Meeting Date: October 24, 2024
+Attendees:
+- Sarah Jenkins (Ingram Micro Cloud Alliance Director)
+- Marcus Vance (CTO, Apex Cloud Solutions - Reseller Partner)
+- Elena Rostova (Partner Integration Engineer, Ingram Micro)
+- Dev team lead from Apex
+
+Notes & Raw Discussion:
+Apex Cloud Solutions wants to onboard as a Tier 1 CSP (Cloud Solution Provider) direct partner on Ingram Micro Cloud Marketplace by Q1 next year.
+They currently have 14,000 active Microsoft 365 and Azure seats managed across 120 SME customers in North America, with plans to expand to AWS and Google Workspace in Q2.
+Their primary pain point is automated provisioning and consolidated invoicing. Today, their billing team spends 4 business days every month reconciling CSV exports from three different vendor consoles against their QuickBooks ledger.
+
+Technical Requirements:
+- Need automated seat provisioning via Ingram Micro CloudBlue / REST APIs.
+- Webhook subscriptions for license provisioning status changes (Pending -> Provisioned -> Suspended -> Terminated).
+- OAuth2 integration with mutual TLS authentication for secure catalog synchronization.
+- Real-time catalog price sync (handling tiered reseller margins: Silver 8%, Gold 12%, Platinum 16%).
+- Target SLA requirement: Provisioning requests must execute in under 45 seconds for SaaS licenses.
+
+Commercial & Credit Terms:
+- Initial requested credit line: $250,000 monthly rolling credit.
+- Standard payment terms: Net-30 via ACH.
+- Target Go-Live: January 15th, 2025.
+
+Security & Compliance requirements:
+- Must comply with SOC 2 Type II and ISO 27001.
+- No storage of customer credit card data on partner endpoints (tokenized routing only).
+- Role-Based Access Control (RBAC) with MFA enforcement for all admin portal users.
+
+Action Items:
+- Sarah to send Master Services Agreement (MSA) and CSP Partner Addendum by Friday.
+- Elena to provision Sandbox API keys and share OpenAPI spec with Marcus's team.
+- Apex team to complete security questionnaire by Nov 10.
+- Joint technical sync scheduled for Nov 14 to review Sandbox test transactions.

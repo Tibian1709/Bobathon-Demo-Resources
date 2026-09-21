@@ -1,0 +1,63 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Bob Assistant Temporary Artifacts
+.bob/
+.bob/tmp/
+
+# Office Temporary & Lock Files (Word, Excel, PowerPoint)
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage Artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Secrets & Environment Variables (Mandatory Security Rule)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Test Environments & Ad-hoc Experiments
+test-env/
+test_environment/
+test-environment/
