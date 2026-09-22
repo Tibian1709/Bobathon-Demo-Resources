@@ -1,0 +1,462 @@
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0001
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000001        *=========================== READREL ============================*
+000002        * Authors: Brian D Pead
+000003        *
+000004        * License: MIT
+000005        *
+000006        * Description: Reads the relative file created by program BLDFILES
+000007        *              in the specfied manner, and displays the records
+000008        *              read.
+000009        *
+000010        * Date        Version  Description
+000011        * ----        -------  -----------
+000012        * 2020-02-08  1.0      First release
+000013        *================================================================*
+000014
+000015         IDENTIFICATION DIVISION.
+000016        *========================
+000017
+000018         PROGRAM-ID.                 READREL.
+000019
+000020         ENVIRONMENT DIVISION.
+000021        *=====================
+000022
+000023         CONFIGURATION SECTION.
+000024        *----------------------
+000025
+000026         SOURCE-COMPUTER.
+000027             IBM-Z15.
+000028        *    IBM-Z15 DEBUGGING MODE.
+000029
+000030         INPUT-OUTPUT SECTION.
+000031        *---------------------
+000032
+000033         FILE-CONTROL.
+000034             SELECT NAMADDRL         ASSIGN "Data\NAMEADDR.Rel.dat"
+000035                                     ORGANIZATION RELATIVE
+000036                                     ACCESS DYNAMIC
+000037                                     RELATIVE KEY W-RELATIVE-REC
+000038                                     FILE STATUS W-FILE-STATUS.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0002
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000039        /
+000040         DATA DIVISION.
+000041        *==============
+000042
+000043         FILE SECTION.
+000044        *-------------
+000045
+000046         FD  NAMADDRL.
+000047
+000048         01  NAMADDRL-REC.           COPY NAMEADDR.
+000001C       *========================= NAMEADDR.cpy =========================*
+000002C       * Authors: Brian D Pead
+000003C       *
+000004C       * License: MIT
+000005C       *
+000006C       * Date        Version  Description
+000007C       * ----        -------  -----------
+000008C       * 2020-02-08  1.0      First release
+000009C       *================================================================*
+000010C
+000011C       *01  NAMEADDR-REC.
+000012C            05  NA-TAXID            PIC X(12).
+000013C            05  NA-NAME.
+000014C                10  NA-PREFIX       PIC X(10).
+000015C                10  NA-FIRST-NAME   PIC X(25).
+000016C                10  NA-LAST-NAME    PIC X(35).
+000017C                10  NA-SUFFIX       PIC X(10).
+000018C            05  NA-ADDRESS.
+000019C                10  NA-STREET       PIC X(35).
+000020C                10  NA-CITY         PIC X(25).
+000021C                10  NA-STATE        PIC X(10).
+000022C                10  NA-ZIP-CODE     PIC X(10).
+warning: line not terminated by a newline
+000049
+000050         WORKING-STORAGE SECTION.
+000051        *------------------------
+000052
+000053         01  W-NAMADDRL-RECS         PIC 9(09)  COMP VALUE 0.
+000054         01  W-RETURN-CODE           PIC S9(04) COMP.
+000055         01  W-DISP-NUM              PIC ZZ,ZZ9.
+000056
+000057         01  W-ERROR-MSG             PIC X(20)       VALUE
+000058             '**** READREL error: '.
+000059
+000060         01  W-READ-METHOD           PIC X(01).
+000061             88  W-READ-METHOD-RELATIVE              VALUE 'R'.
+000062             88  W-READ-METHOD-SEQUENTIAL            VALUE 'S'.
+000063             88  W-READ-METHOD-EXIT                  VALUE ' '.
+000064             88  W-READ-METHOD-VALID                 VALUE 'R'
+000065                                                           'S'
+000066                                                           ' '.
+000067         01  W-RELATIVE-REC          PIC 9(09).
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0003
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000068             88  W-RELATIVE-REC-EXIT                 VALUE 0.
+000069
+000070         01  FILLER                  PIC X(01).
+000071             88  W-INVALID-KEY                       VALUE 'Y'.
+000072             88  W-NOT-INVALID-KEY                   VALUE 'N'.
+000073
+000074         01  FILLER                  PIC X(01).
+000075             88  W-EOF                               VALUE 'Y'.
+000076             88  W-NOT-EOF                           VALUE 'N'.
+000077
+000078         01  W-FILE-STATUS           PIC X(02).
+000079             88  W-FILE-STATUS-GOOD                  VALUE '00'.
+000080
+000081         01  W-COMPILED-DATE.
+000082             05  W-COMPILED-DATE-YYYY
+000083                                     PIC X(04).
+000084             05  W-COMPILED-DATE-MM  PIC X(02).
+000085             05  W-COMPILED-DATE-DD  PIC X(02).
+000086             05  W-COMPILED-TIME-HH  PIC X(02).
+000087             05  W-COMPILED-TIME-MM  PIC X(02).
+000088             05  W-COMPILED-TIME-SS  PIC X(02).
+000089             05  FILLER              PIC X(07).
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0004
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000090        /
+000091         PROCEDURE DIVISION.
+000092        *===================
+000093
+000094         MAIN.
+000095        *-----
+000096
+000097             PERFORM SUB-1000-START-UP THRU SUB-1000-EXIT
+000098
+000099             IF      W-RETURN-CODE NOT = 0
+000100                 GO TO MAIN-EXIT
+000101             END-IF
+000102
+000103             PERFORM SUB-9100-GET-READ-METHOD THRU SUB-9100-EXIT
+000104
+000105             PERFORM SUB-2000-PROCESS-READ-METHOD THRU SUB-2000-EXIT
+000106                 UNTIL W-READ-METHOD-EXIT
+000107                 OR    W-RETURN-CODE NOT = 0
+000108
+000109             PERFORM SUB-3000-SHUT-DOWN THRU SUB-3000-EXIT
+000110             .
+000111         MAIN-EXIT.
+000112             STOP RUN.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0005
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000113        /
+000114         SUB-1000-START-UP.
+000115        *------------------
+000116
+000117             MOVE 0                  TO W-RETURN-CODE
+000118             MOVE FUNCTION WHEN-COMPILED
+000119                                     TO W-COMPILED-DATE
+000120
+000121             DISPLAY 'READREL compiled on '
+000122                 W-COMPILED-DATE-YYYY '/'
+000123                 W-COMPILED-DATE-MM   '/'
+000124                 W-COMPILED-DATE-DD   ' at '
+000125                 W-COMPILED-TIME-HH   ':'
+000126                 W-COMPILED-TIME-MM   ':'
+000127                 W-COMPILED-TIME-SS
+000128
+000129             OPEN INPUT NAMADDRL
+000130
+000131             IF      NOT W-FILE-STATUS-GOOD
+000132                 DISPLAY W-ERROR-MSG
+000133                         'File status '
+000134                         W-FILE-STATUS
+000135                         ' opening NAMADDRL'
+000136                 MOVE 10             TO W-RETURN-CODE
+000137             END-IF
+000138             .
+000139         SUB-1000-EXIT.
+000140             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0006
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000141        /
+000142         SUB-2000-PROCESS-READ-METHOD.
+000143        *-----------------------------
+000144
+000145             IF      W-READ-METHOD-RELATIVE
+000146                 PERFORM SUB-9200-GET-RELATIVE-REC THRU SUB-9200-EXIT
+000147
+000148                 PERFORM SUB-2100-READ-RELATIVE THRU SUB-2100-EXIT
+000149                     UNTIL W-RELATIVE-REC-EXIT
+000150             ELSE
+000151                 SET  W-NOT-EOF      TO TRUE
+000152
+000153                 PERFORM SUB-2200-READ-SEQUENTIAL THRU SUB-2200-EXIT
+000154                     UNTIL W-EOF
+000155                     OR    W-RETURN-CODE NOT = 0
+000156             END-IF
+000157
+000158             IF      W-RETURN-CODE NOT = 0
+000159                 GO TO SUB-2000-EXIT
+000160             END-IF
+000161
+000162             PERFORM SUB-9100-GET-READ-METHOD THRU SUB-9100-EXIT
+000163             .
+000164         SUB-2000-EXIT.
+000165             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0007
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000166        /
+000167         SUB-2100-READ-RELATIVE.
+000168        *-----------------------
+000169
+000170             PERFORM SUB-9300-READ-NAMADDRL-RELATIVE THRU SUB-9300-EXIT
+000171
+000172             IF      W-NOT-INVALID-KEY
+000173                 DISPLAY NAMADDRL-REC
+000174             END-IF
+000175
+000176             PERFORM SUB-9200-GET-RELATIVE-REC THRU SUB-9200-EXIT
+000177             .
+000178         SUB-2100-EXIT.
+000179             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0008
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000180        /
+000181         SUB-2200-READ-SEQUENTIAL.
+000182        *-------------------------
+000183
+000184             PERFORM SUB-9400-START-NAMADDRL THRU SUB-9400-EXIT
+000185
+000186             IF      W-RETURN-CODE NOT = 0
+000187                 GO TO SUB-2200-EXIT
+000188             END-IF
+000189
+000190             PERFORM SUB-9500-READ-NAMADDRL-SEQ THRU SUB-9500-EXIT
+000191
+000192             PERFORM UNTIL W-EOF
+000193                     OR    W-RETURN-CODE NOT = 0
+000194                 DISPLAY NAMADDRL-REC
+000195
+000196                 PERFORM SUB-9500-READ-NAMADDRL-SEQ THRU SUB-9500-EXIT
+000197             END-PERFORM
+000198             .
+000199         SUB-2200-EXIT.
+000200             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0009
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000201        /
+000202         SUB-3000-SHUT-DOWN.
+000203        *-------------------
+000204
+000205             CLOSE NAMADDRL
+000206
+000207             MOVE W-NAMADDRL-RECS    TO W-DISP-NUM
+000208             DISPLAY 'NAMADDRL records read:    '
+000209                     W-DISP-NUM
+000210
+000211             DISPLAY 'READREL Completed'
+000212             .
+000213         SUB-3000-EXIT.
+000214             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0010
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000215        /
+000216         SUB-9100-GET-READ-METHOD.
+000217        *-------------------------
+000218
+000219             MOVE 'X'                TO W-READ-METHOD
+000220
+000221             PERFORM UNTIL W-READ-METHOD-VALID
+000222                 DISPLAY 'Enter R for relative reads, S for sequential, '
+000223                         'space to exit: '
+000224                     NO ADVANCING
+000225
+000226                 ACCEPT W-READ-METHOD
+000227
+000228                 MOVE FUNCTION UPPER-CASE(W-READ-METHOD)
+000229                                     TO W-READ-METHOD
+000230             END-PERFORM
+000231             .
+000232         SUB-9100-EXIT.
+000233             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0011
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000234        /
+000235         SUB-9200-GET-RELATIVE-REC.
+000236        *--------------------------
+000237
+000238             DISPLAY 'Enter relative record number (odd number since we '
+000239                     'left space in file for the even ones) or space to '
+000240                     'exit: '
+000241                 NO ADVANCING
+000242
+000243             ACCEPT W-RELATIVE-REC
+000244             .
+000245         SUB-9200-EXIT.
+000246             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0012
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000247        /
+000248         SUB-9300-READ-NAMADDRL-RELATIVE.
+000249        *--------------------------------
+000250
+000251             READ NAMADDRL
+000252                 INVALID KEY
+000253                     SET  W-INVALID-KEY
+000254                                     TO TRUE
+000255                     DISPLAY 'Relative record not on file: '
+000256                             W-RELATIVE-REC
+000257                     GO TO SUB-9300-EXIT
+000258             END-READ
+000259
+000260             IF      W-FILE-STATUS-GOOD
+000261                 SET  W-NOT-INVALID-KEY
+000262                                     TO TRUE
+000263                 ADD  1              TO W-NAMADDRL-RECS
+000264             ELSE
+000265                 DISPLAY W-ERROR-MSG
+000266                         'File status '
+000267                         W-FILE-STATUS
+000268                         ' reading NAMADDRL key'
+000269                 MOVE 20             TO W-RETURN-CODE
+000270             END-IF
+000271             .
+000272         SUB-9300-EXIT.
+000273             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0013
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000274        /
+000275         SUB-9400-START-NAMADDRL.
+000276        *------------------------
+000277
+000278             START NAMADDRL
+000279                 FIRST
+000280             END-START
+000281
+000282             IF      NOT W-FILE-STATUS-GOOD
+000283                 DISPLAY W-ERROR-MSG
+000284                         'File status '
+000285                         W-FILE-STATUS
+000286                         ' starting NAMADDRL'
+000287                 MOVE 40             TO W-RETURN-CODE
+000288             END-IF
+000289             .
+000290         SUB-9400-EXIT.
+000291             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0014
+
+LINE    PG/LN  A...B............................................................SEQUENCE
+
+000292        /
+000293         SUB-9500-READ-NAMADDRL-SEQ.
+000294        *---------------------------
+000295
+000296             READ NAMADDRL NEXT
+000297                 AT END
+000298                     SET  W-EOF      TO TRUE
+000299                     GO TO SUB-9500-EXIT
+000300             END-READ
+000301
+000302             IF      W-FILE-STATUS-GOOD
+000303                 ADD  1              TO W-NAMADDRL-RECS
+000304             ELSE
+000305                 DISPLAY W-ERROR-MSG
+000306                         'File status '
+000307                         W-FILE-STATUS
+000308                         ' reading NAMADDRL next record'
+000309                 MOVE 50             TO W-RETURN-CODE
+000310             END-IF
+000311             .
+000312         SUB-9500-EXIT.
+000313             EXIT.
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0015
+
+SIZE  TYPE           LVL  NAME                           PICTURE
+
+00172 FILE                NAMADDRL
+00172 GROUP          01   NAMADDRL-REC
+00012 ALPHANUMERIC   05   NA-TAXID                       X(12)
+00080 GROUP          05   NA-NAME
+00010 ALPHANUMERIC   10   NA-PREFIX                      X(10)
+00025 ALPHANUMERIC   10   NA-FIRST-NAME                  X(25)
+00035 ALPHANUMERIC   10   NA-LAST-NAME                   X(35)
+00010 ALPHANUMERIC   10   NA-SUFFIX                      X(10)
+00080 GROUP          05   NA-ADDRESS
+00035 ALPHANUMERIC   10   NA-STREET                      X(35)
+00025 ALPHANUMERIC   10   NA-CITY                        X(25)
+00010 ALPHANUMERIC   10   NA-STATE                       X(10)
+00010 ALPHANUMERIC   10   NA-ZIP-CODE                    X(10)
+
+      WORKING-STORAGE SECTION
+
+00004 NUMERIC        01   W-NAMADDRL-RECS                9(09) COMP
+
+00002 NUMERIC        01   W-RETURN-CODE                  S9(04) COMP
+
+00006 NUMERIC        01   W-DISP-NUM                     ZZ,ZZ9
+
+00020 ALPHANUMERIC   01   W-ERROR-MSG                    X(20)
+
+00001 ALPHANUMERIC   01   W-READ-METHOD                  X(01)
+      CONDITIONAL    88   W-READ-METHOD-RELATIVE
+      CONDITIONAL    88   W-READ-METHOD-SEQUENTIAL
+      CONDITIONAL    88   W-READ-METHOD-EXIT
+      CONDITIONAL    88   W-READ-METHOD-VALID
+
+00009 NUMERIC        01   W-RELATIVE-REC                 9(09)
+      CONDITIONAL    88   W-RELATIVE-REC-EXIT
+
+00001 ALPHANUMERIC   01   FILLER                         X(01)
+      CONDITIONAL    88   W-INVALID-KEY
+      CONDITIONAL    88   W-NOT-INVALID-KEY
+
+00001 ALPHANUMERIC   01   FILLER                         X(01)
+      CONDITIONAL    88   W-EOF
+      CONDITIONAL    88   W-NOT-EOF
+
+00002 ALPHANUMERIC   01   W-FILE-STATUS                  X(02)
+      CONDITIONAL    88   W-FILE-STATUS-GOOD
+
+00021 GROUP          01   W-COMPILED-DATE
+00004 ALPHANUMERIC   05   W-COMPILED-DATE-YYYY           X(04)
+00002 ALPHANUMERIC   05   W-COMPILED-DATE-MM             X(02)
+00002 ALPHANUMERIC   05   W-COMPILED-DATE-DD             X(02)
+00002 ALPHANUMERIC   05   W-COMPILED-TIME-HH             X(02)
+00002 ALPHANUMERIC   05   W-COMPILED-TIME-MM             X(02)
+00002 ALPHANUMERIC   05   W-COMPILED-TIME-SS             X(02)
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0016
+
+SIZE  TYPE           LVL  NAME                           PICTURE
+
+00007 ALPHANUMERIC   05   FILLER                         X(07)
+
+
+GnuCOBOL 3.0-rc1.0      READREL.cob                                                   Sun Feb 09 09:58:02 2020  Page 0017
+
+Error/Warning summary:
+
+E:/Users/Brian D Pead/Documents/GnuCOBOL Projects/GC-Examples/CopyBooks/NAMEADDR.CPY:22: warning: line not terminated by a newline
+
+1 warning in compilation group
+0 errors in compilation group

@@ -1,0 +1,155 @@
+{
+    "version": "2.0.0",
+    "options":
+    {
+        "env": 
+        {
+            "COB_CONFIG_DIR":    "C:\\GnuCOBOL\\share\\gnucobol\\config",
+            "COB_COPY_DIR":      "C:\\GnuCOBOL\\share\\gnucobol\\copy",
+            "COB_LIBRARY_PATH":  "${workspaceFolder}\\Bin",
+            "COB_VARSEQ_FORMAT": "0",
+            "MINGW_ROOT_PATH":   "C:\\GnuCOBOL\\",
+            "PATH":              "C:\\GnuCOBOL\\bin"       
+        }
+    },
+    "tasks":
+    [
+        {
+            "label": "Compile Selected Subroutine",
+            "type": "process",
+            "command": "C:\\GnuCOBOL\\bin\\cobc.exe",
+            "args":
+            [
+                "-m",
+                "-o",
+                "${workspaceFolder}\\Bin\\${fileBasenameNoExtension}.dll",
+                "${fileBasenameNoExtension}.cob",
+                "-I${workspaceFolder}\\CopyBooks",
+                "-std=ibm",
+                "-T",
+                "${workspaceFolder}\\Listings\\${fileBasenameNoExtension}.lst",
+                "--tsymbols",
+                "-v",
+                "-debug"
+            ],
+            "problemMatcher": "$gnucobol-cobc",
+            "group":
+            {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile Selected Main Program",
+            "type": "process",
+            "command": "C:\\GnuCOBOL\\bin\\cobc.exe",
+            "args":
+            [
+                "-x",
+                "-o",
+                "${workspaceFolder}\\Bin\\${fileBasenameNoExtension}.exe",
+                "${fileBasenameNoExtension}.cob",
+                "-I${workspaceFolder}\\CopyBooks",
+                "-std=ibm",
+                "-T",
+                "${workspaceFolder}\\Listings\\${fileBasenameNoExtension}.lst",
+                "--tsymbols",
+                "-v",
+                "-debug"
+            ],
+            "problemMatcher": "$gnucobol-cobc",
+            "group":
+            {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile and Run Selected Main Program",
+            "type": "process",
+            "command": "${workspaceFolder}\\Bin\\${fileBasenameNoExtension}.exe",
+            "dependsOn":
+            [
+                "Compile Selected Main Program"
+            ],
+            "problemMatcher": "$gnucobol-cobc"
+        },
+        {
+            "label": "Run Selected Main Program",
+            "type": "process",
+            "command": "${workspaceFolder}\\Bin\\${fileBasenameNoExtension}.exe",
+            "problemMatcher": "$gnucobol-cobc"
+        },
+        {
+            "label": "Compile RDWADJST",
+            "type": "process",
+            "command": "C:\\GnuCOBOL\\bin\\cobc.exe",
+            "args":
+            [
+                "-x",
+                "-o",
+                "${workspaceFolder}\\Bin\\RDWADJST.exe",
+                "RDWADJST.cob",
+                "-I${workspaceFolder}\\CopyBooks",
+                "-std=mf", // Required for COMP-X fields and CBL_OPEN_FILE etc
+                "-T",
+                "${workspaceFolder}\\Listings\\RDWADJST.lst",
+                "--tsymbols",
+                "-v",
+                //"-debug"
+            ],
+            "problemMatcher": "$gnucobol-cobc",
+            "group":
+            {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile and Run RDWADJST",
+            "type": "process",
+            "command": "${workspaceFolder}\\Bin\\RDWADJST.exe",
+            "args": 
+            [
+                "${workspaceFolder}\\Data\\TESTIO2.Output.bin",
+                "GC2MF"
+            ],
+            "dependsOn":
+            [
+                "Compile RDWADJST"
+            ],
+            "problemMatcher": "$gnucobol-cobc"
+        },
+        {
+            "label": "Run RDWADJST - GC2MF",
+            "type": "process",
+            "command": "${workspaceFolder}\\Bin\\RDWADJST.exe",
+            "args": 
+            [
+                "${workspaceFolder}\\Data\\TESTIO2.Output.bin",
+                "GC2MF"
+            ],
+            "problemMatcher": "$gnucobol-cobc"
+        },
+        {
+            "label": "Run RDWADJST - MF2GC",
+            "type": "process",
+            "command": "${workspaceFolder}\\Bin\\RDWADJST.exe",
+            "args": 
+            [
+                "${workspaceFolder}\\Data\\TESTIO2.Output.bin",
+                "MF2GC"
+            ],
+            "problemMatcher": "$gnucobol-cobc"
+        },
+        {
+            "label": "Run SET to see environment variables",
+            "type": "shell",
+            "command": "set",
+            "args":
+            [
+            ],
+            "problemMatcher": "$gnucobol-cobc"
+        },
+    ]
+}
