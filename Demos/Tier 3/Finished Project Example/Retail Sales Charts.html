@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retail Sales Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: #f7f8fa;
+      color: #1f2328;
+      padding: 32px 24px 48px;
+    }
+    header {
+      max-width: 860px;
+      margin: 0 auto 32px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 16px;
+    }
+    header h1 { font-size: 22px; font-weight: 600; }
+    header p  { font-size: 13px; color: #57606a; margin-top: 4px; }
+    .grid {
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px 16px 16px;
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2328;
+      margin-bottom: 4px;
+    }
+    .card p.sub {
+      font-size: 12px;
+      color: #57606a;
+      margin-bottom: 12px;
+    }
+    .chart { width: 100%; height: 280px; }
+    .wide .chart { height: 300px; }
+    footer {
+      max-width: 860px;
+      margin: 32px auto 0;
+      text-align: center;
+      font-size: 12px;
+      color: #57606a;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Retail Sales Dashboard</h1>
+  <p>Based on 1,000 transactions &mdash; full-year 2023 &nbsp;|&nbsp; Source: Retail Sales Data Set.csv</p>
+</header>
+
+<div class="grid">
+
+  <!-- Chart 1: Revenue by Category -->
+  <div class="card">
+    <h2>Total Sales Revenue by Product Category</h2>
+    <p class="sub">Cumulative revenue ($) across all transactions</p>
+    <div id="chart-category" class="chart"></div>
+  </div>
+
+  <!-- Chart 3: Purchases by Age Group -->
+  <div class="card">
+    <h2>Purchases by Customer Age Group</h2>
+    <p class="sub">Total units purchased per age segment</p>
+    <div id="chart-age" class="chart"></div>
+  </div>
+
+  <!-- Chart 2: Volume by Month (wide) -->
+  <div class="card wide">
+    <h2>Sales Volume by Month</h2>
+    <p class="sub">Total units sold each month across all categories</p>
+    <div id="chart-month" class="chart"></div>
+  </div>
+
+</div>
+
+<footer>Made with IBM Bob</footer>
+
+<script>
+  /* ── Palette ── */
+  const BLUE   = '#3b82d4';
+  const PURPLE = '#7c5cd8';
+  const TEAL   = '#0d9488';
+  const AMBER  = '#d97706';
+  const MUTED  = '#57606a';
+
+  /* ── Shared text style ── */
+  const labelStyle = { color: '#1f2328', fontSize: 12 };
+  const axisLine   = { lineStyle: { color: '#e5e7eb' } };
+  const splitLine  = { lineStyle: { color: '#f0f1f3', type: 'dashed' } };
+
+  /* ────────────────────────────────────────────
+     Chart 1 — Revenue by Category (horizontal bar)
+  ──────────────────────────────────────────── */
+  echarts.init(document.getElementById('chart-category')).setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: params => {
+        const p = params[0];
+        return `<b>${p.name}</b><br/>$${p.value.toLocaleString()}`;
+      }
+    },
+    grid: { left: 90, right: 24, top: 16, bottom: 32 },
+    xAxis: {
+      type: 'value',
+      axisLabel: { ...labelStyle, formatter: v => '$' + (v/1000).toFixed(0) + 'k' },
+      splitLine,
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'category',
+      data: ['Beauty', 'Clothing', 'Electronics'],
+      axisLabel: labelStyle,
+      axisLine,
+      axisTick: { show: false }
+    },
+    series: [{
+      type: 'bar',
+      barMaxWidth: 40,
+      data: [
+        { value: 143515, itemStyle: { color: PURPLE } },
+        { value: 155580, itemStyle: { color: TEAL   } },
+        { value: 156905, itemStyle: { color: BLUE   } }
+      ],
+      label: {
+        show: true,
+        position: 'right',
+        formatter: p => '$' + p.value.toLocaleString(),
+        color: MUTED,
+        fontSize: 11
+      }
+    }]
+  });
+
+  /* ────────────────────────────────────────────
+     Chart 3 — Age Group Breakdown (donut)
+  ──────────────────────────────────────────── */
+  echarts.init(document.getElementById('chart-age')).setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} units ({d}%)'
+    },
+    legend: {
+      bottom: 8,
+      left: 'center',
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: labelStyle
+    },
+    series: [{
+      type: 'pie',
+      radius: ['42%', '68%'],
+      center: ['50%', '46%'],
+      avoidLabelOverlap: true,
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        fontSize: 12,
+        color: '#1f2328'
+      },
+      labelLine: { length: 10, length2: 8 },
+      data: [
+        { value: 1254, name: 'Middle Age (36–55)', itemStyle: { color: BLUE   } },
+        { value: 745,  name: 'Adolescent (18–35)', itemStyle: { color: TEAL   } },
+        { value: 515,  name: 'Senior (56–64)',     itemStyle: { color: PURPLE } }
+      ]
+    }]
+  });
+
+  /* ────────────────────────────────────────────
+     Chart 2 — Sales Volume by Month (line)
+  ──────────────────────────────────────────── */
+  echarts.init(document.getElementById('chart-month')).setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: params => {
+        const p = params[0];
+        return `<b>${p.name}</b><br/>${p.value} units`;
+      }
+    },
+    grid: { left: 48, right: 24, top: 24, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      data: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      axisLabel: labelStyle,
+      axisLine,
+      axisTick: { show: false },
+      boundaryGap: false
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: labelStyle,
+      splitLine,
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    series: [{
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      lineStyle: { color: BLUE, width: 2.5 },
+      itemStyle: { color: BLUE },
+      areaStyle: { color: 'rgba(59,130,212,0.08)' },
+      data: [199, 214, 194, 214, 259, 197, 176, 227, 170, 252, 205, 207],
+      label: {
+        show: true,
+        position: 'top',
+        fontSize: 11,
+        color: MUTED
+      }
+    }]
+  });
+</script>
+</body>
+</html>
