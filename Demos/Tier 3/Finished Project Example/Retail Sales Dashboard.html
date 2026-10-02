@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Retail Sales Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;}
+
+:root{
+  --bg:#eef1f7;
+  --bg-grad:linear-gradient(135deg,#e8edf7 0%,#f0f4fc 50%,#e4ecf7 100%);
+  --surface:#ffffff;
+  --surface-glass:rgba(255,255,255,0.58);
+  --border:#d8dde8;
+  --text-primary:#161616;
+  --text-muted:#6f6f6f;
+  --ibm-blue:#0f62fe;
+  --ibm-blue-hover:#0353e9;
+  --ibm-red:#da1e28;
+  --ibm-green:#24a148;
+  --ibm-yellow:#d4a017;
+  --ibm-teal:#009d9a;
+  --ibm-purple:#8a3ffc;
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.10);
+  --radius:10px;
+}
+
+.glass{
+  background:var(--surface-glass);
+  backdrop-filter:blur(14px) saturate(180%);
+  -webkit-backdrop-filter:blur(14px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.72);
+  border-top-color:rgba(255,255,255,0.92);
+  box-shadow:0 2px 14px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.82);
+}
+
+body{background:var(--bg-grad) fixed;}
+
+header.top-bar{position:sticky;top:0;z-index:100;padding:0 28px;height:58px;display:flex;align-items:center;gap:14px;}
+header.top-bar .logo{width:32px;height:32px;background:var(--ibm-blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;letter-spacing:-0.5px;flex-shrink:0;}
+header.top-bar h1{font-size:17px;font-weight:600;color:var(--text-primary);flex:1;}
+header.top-bar .badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(15,98,254,0.12);color:var(--ibm-blue);letter-spacing:0.4px;}
+header.top-bar .subtitle{font-size:12px;color:var(--text-muted);}
+
+.layout{display:flex;flex:1;gap:0;padding:20px 24px 20px 20px;max-width:1700px;width:100%;margin:0 auto;align-items:flex-start;}
+
+aside.sidebar{width:220px;flex-shrink:0;border-radius:var(--radius);padding:18px 16px 20px;position:sticky;top:74px;margin-right:20px;}
+aside.sidebar h2{font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;}
+.filter-group{margin-bottom:18px;}
+.filter-group label{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+
+.chip{cursor:pointer;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.58);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);border:1px solid rgba(255,255,255,0.7);border-top-color:rgba(255,255,255,0.9);box-shadow:0 1px 6px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.8);color:var(--text-primary);user-select:none;transition:all 0.15s ease;}
+.chip:hover{background:rgba(255,255,255,0.8);box-shadow:0 2px 10px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.9);transform:translateY(-1px);}
+.chip.active{background:var(--ibm-blue);border-color:var(--ibm-blue-hover);border-top-color:rgba(255,255,255,0.3);box-shadow:0 2px 10px rgba(15,98,254,0.35),inset 0 1px 0 rgba(255,255,255,0.2);color:#ffffff;}
+
+.reset-btn{width:100%;margin-top:8px;cursor:pointer;font-size:12px;font-weight:600;padding:7px 0;border-radius:8px;background:rgba(255,255,255,0.55);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);border:1px solid rgba(255,255,255,0.7);border-top-color:rgba(255,255,255,0.9);box-shadow:0 1px 6px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.8);color:var(--text-muted);transition:all 0.15s ease;letter-spacing:0.3px;}
+.reset-btn:hover{color:var(--ibm-red);border-color:rgba(218,30,40,0.3);background:rgba(255,255,255,0.75);}
+
+.filter-count{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(15,98,254,0.12);color:var(--ibm-blue);vertical-align:middle;}
+
+main.content{flex:1;min-width:0;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 16px;display:flex;flex-direction:column;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);opacity:0;animation:fadeSlideUp 0.4s ease forwards;}
+.kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--radius) 0 0 var(--radius);}
+.kpi-card:nth-child(1)::before{background:var(--ibm-blue);}
+.kpi-card:nth-child(2)::before{background:var(--ibm-teal);}
+.kpi-card:nth-child(3)::before{background:var(--ibm-green);}
+.kpi-card:nth-child(4)::before{background:var(--ibm-yellow);}
+.kpi-card:nth-child(1){animation-delay:0ms;}
+.kpi-card:nth-child(2){animation-delay:80ms;}
+.kpi-card:nth-child(3){animation-delay:160ms;}
+.kpi-card:nth-child(4){animation-delay:240ms;}
+.kpi-icon{font-size:20px;margin-bottom:8px;}
+.kpi-label{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-note{font-size:11px;color:var(--text-muted);margin-top:4px;}
+
+/* ── Mechanical flicker ── */
+@keyframes mechFlicker{
+  0%  {opacity:1;}
+  6%  {opacity:0.1;transform:scaleY(0.90);}
+  12% {opacity:0.9;transform:scaleY(1);}
+  18% {opacity:0.2;transform:scaleY(0.94);}
+  24% {opacity:1;transform:scaleY(1);}
+  32% {opacity:0.15;transform:scaleY(0.92);}
+  38% {opacity:0.8;transform:scaleY(1);}
+  46% {opacity:0.4;}
+  54% {opacity:1;}
+  62% {opacity:0.25;transform:scaleY(0.96);}
+  70% {opacity:1;transform:scaleY(1);}
+  80% {opacity:0.7;}
+  90% {opacity:1;}
+  100%{opacity:1;}
+}
+.kpi-value.flicker{
+  animation:mechFlicker 0.88s steps(1,end);
+  display:inline-block;
+}
+
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+.charts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 12px;box-shadow:var(--shadow-sm);}
+.chart-card h3{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px;}
+.chart-card p.sub{font-size:11px;color:var(--text-muted);margin-bottom:10px;}
+.chart-mount{width:100%;height:260px;}
+
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin:24px 0 12px;padding-left:2px;}
+
+footer{text-align:center;font-size:11px;color:var(--text-muted);padding:16px 0 20px;border-top:1px solid var(--border);margin-top:12px;background:rgba(255,255,255,0.4);}
+
+/* ══════════════════════════════════════════
+   CHART BUILDER PANEL
+══════════════════════════════════════════ */
+.builder-bar{
+  max-width:1700px;margin:0 auto;padding:0 24px 0 20px;
+}
+.builder-toggle{
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;user-select:none;
+  padding:10px 18px;
+  border-radius:var(--radius);
+  font-size:13px;font-weight:600;color:var(--ibm-blue);
+  width:100%;border:none;text-align:left;
+  background:rgba(15,98,254,0.06);
+  backdrop-filter:blur(10px) saturate(160%);
+  -webkit-backdrop-filter:blur(10px) saturate(160%);
+  border:1px solid rgba(15,98,254,0.15);
+  border-top-color:rgba(255,255,255,0.7);
+  box-shadow:0 1px 6px rgba(15,98,254,0.08),inset 0 1px 0 rgba(255,255,255,0.7);
+  transition:all 0.15s ease;
+  margin-bottom:0;
+}
+.builder-toggle:hover{background:rgba(15,98,254,0.1);}
+.builder-toggle .arrow{
+  margin-left:auto;font-size:10px;
+  transition:transform 0.2s ease;
+  color:var(--ibm-blue);
+}
+.builder-toggle.open .arrow{transform:rotate(180deg);}
+
+.builder-panel{
+  display:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:20px 24px 24px;
+  box-shadow:var(--shadow-md);
+  margin-bottom:12px;
+}
+.builder-panel.open{display:block;}
+
+.builder-controls{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:16px;
+  margin-bottom:20px;
+}
+.bc-group{display:flex;flex-direction:column;gap:6px;}
+.bc-group label{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.6px;color:var(--text-muted);
+}
+.bc-select{
+  appearance:none;-webkit-appearance:none;
+  width:100%;padding:8px 30px 8px 10px;
+  border-radius:7px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.7) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236f6f6f'/%3E%3C/svg%3E") no-repeat right 10px center;
+  font-size:12px;color:var(--text-primary);
+  font-family:inherit;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.9);
+  transition:border-color 0.15s;
+}
+.bc-select:focus{outline:none;border-color:var(--ibm-blue);box-shadow:0 0 0 3px rgba(15,98,254,0.12);}
+
+/* multi-select chips inside builder */
+.bc-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.bc-chip{
+  cursor:pointer;font-size:11px;font-weight:500;
+  padding:4px 10px;border-radius:16px;
+  background:rgba(255,255,255,0.6);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.7);border-top-color:rgba(255,255,255,0.9);
+  box-shadow:0 1px 4px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.8);
+  color:var(--text-primary);user-select:none;transition:all 0.12s ease;
+}
+.bc-chip:hover{background:rgba(255,255,255,0.85);transform:translateY(-1px);}
+.bc-chip.bc-active{
+  background:var(--ibm-blue);color:#fff;
+  border-color:var(--ibm-blue-hover);
+  box-shadow:0 2px 8px rgba(15,98,254,0.3),inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.builder-actions{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.build-btn{
+  cursor:pointer;font-size:13px;font-weight:600;
+  padding:9px 22px;border-radius:8px;border:none;
+  background:var(--ibm-blue);color:#fff;
+  box-shadow:0 2px 10px rgba(15,98,254,0.3),inset 0 1px 0 rgba(255,255,255,0.2);
+  transition:all 0.15s ease;
+}
+.build-btn:hover{background:var(--ibm-blue-hover);box-shadow:0 4px 14px rgba(15,98,254,0.4);}
+.build-btn:active{transform:scale(0.97);}
+.clear-btn{
+  cursor:pointer;font-size:12px;font-weight:600;
+  padding:8px 16px;border-radius:8px;
+  background:rgba(255,255,255,0.6);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.7);border-top-color:rgba(255,255,255,0.9);
+  box-shadow:0 1px 5px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.8);
+  color:var(--text-muted);transition:all 0.15s ease;
+}
+.clear-btn:hover{color:var(--ibm-red);border-color:rgba(218,30,40,0.25);}
+
+.builder-results{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.builder-results.single{grid-template-columns:1fr;}
+.builder-chart-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 10px;}
+.builder-chart-card h4{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:2px;}
+.builder-chart-card p.sub{font-size:11px;color:var(--text-muted);margin-bottom:8px;}
+.builder-chart-mount{width:100%;height:280px;}
+.builder-empty{
+  text-align:center;padding:40px 20px;color:var(--text-muted);
+  font-size:13px;border:2px dashed var(--border);border-radius:var(--radius);
+  grid-column:1/-1;
+}
+.builder-empty span{display:block;font-size:24px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<header class="top-bar glass">
+  <div class="logo">RS</div>
+  <h1>Retail Sales Dashboard</h1>
+  <span class="subtitle">Full-Year 2023 &nbsp;&middot;&nbsp; 1,000 Transactions</span>
+  <span class="badge">FY 2023</span>
+</header>
+
+<!-- ── Chart Builder ── -->
+<div class="builder-bar">
+  <button class="builder-toggle" id="builder-toggle">
+    &#9881;&#65039; &nbsp;Chart Builder
+    <span class="arrow">&#9660;</span>
+  </button>
+  <div class="builder-panel" id="builder-panel">
+
+    <div class="builder-controls">
+
+      <!-- Chart type -->
+      <div class="bc-group">
+        <label>Chart Type</label>
+        <select class="bc-select" id="bc-type">
+          <option value="bar">Bar Chart</option>
+          <option value="line">Line Chart</option>
+          <option value="area">Area Chart</option>
+          <option value="pie">Pie Chart</option>
+          <option value="donut">Donut Chart</option>
+          <option value="hbar">Horizontal Bar</option>
+          <option value="scatter">Scatter Plot</option>
+        </select>
+      </div>
+
+      <!-- Metric (Y axis / value) -->
+      <div class="bc-group">
+        <label>Metric</label>
+        <select class="bc-select" id="bc-metric">
+          <option value="revenue">Revenue ($)</option>
+          <option value="transactions">Transactions</option>
+          <option value="units">Units Sold</option>
+          <option value="aov">Avg Order Value</option>
+        </select>
+      </div>
+
+      <!-- Group by (X axis / dimension) -->
+      <div class="bc-group">
+        <label>Group By</label>
+        <select class="bc-select" id="bc-groupby">
+          <option value="month">Month</option>
+          <option value="category">Category</option>
+          <option value="gender">Gender</option>
+          <option value="ageGroup">Age Group</option>
+          <option value="dow">Day of Week</option>
+          <option value="priceBand">Price Band</option>
+          <option value="quantity">Order Quantity</option>
+        </select>
+      </div>
+
+      <!-- Category filter -->
+      <div class="bc-group">
+        <label>Category</label>
+        <div class="bc-chips" id="bc-chips-category">
+          <span class="bc-chip bc-active" data-bcgroup="category" data-bcval="Electronics">Electronics</span>
+          <span class="bc-chip bc-active" data-bcgroup="category" data-bcval="Clothing">Clothing</span>
+          <span class="bc-chip bc-active" data-bcgroup="category" data-bcval="Beauty">Beauty</span>
+        </div>
+      </div>
+
+      <!-- Gender filter -->
+      <div class="bc-group">
+        <label>Gender</label>
+        <div class="bc-chips" id="bc-chips-gender">
+          <span class="bc-chip bc-active" data-bcgroup="gender" data-bcval="Male">Male</span>
+          <span class="bc-chip bc-active" data-bcgroup="gender" data-bcval="Female">Female</span>
+        </div>
+      </div>
+
+      <!-- Age group filter -->
+      <div class="bc-group">
+        <label>Age Group</label>
+        <div class="bc-chips" id="bc-chips-age">
+          <span class="bc-chip bc-active" data-bcgroup="age" data-bcval="Adolescent">Adolescent</span>
+          <span class="bc-chip bc-active" data-bcgroup="age" data-bcval="Middle Age">Middle Age</span>
+          <span class="bc-chip bc-active" data-bcgroup="age" data-bcval="Old">Senior</span>
+        </div>
+      </div>
+
+      <!-- Time range -->
+      <div class="bc-group">
+        <label>From Month</label>
+        <select class="bc-select" id="bc-from">
+          <option value="0">January</option><option value="1">February</option>
+          <option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option>
+          <option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+
+      <div class="bc-group">
+        <label>To Month</label>
+        <select class="bc-select" id="bc-to">
+          <option value="0">January</option><option value="1">February</option>
+          <option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option>
+          <option value="10">November</option><option value="11" selected>December</option>
+        </select>
+      </div>
+
+    </div><!-- /.builder-controls -->
+
+    <div class="builder-actions">
+      <button class="build-btn" id="build-btn">&#9654; Generate Chart</button>
+      <button class="clear-btn" id="builder-clear-btn">&#10005; Clear Results</button>
+    </div>
+
+    <div class="builder-results" id="builder-results">
+      <div class="builder-empty">
+        <span>&#128202;</span>
+        Configure your parameters above and click <strong>Generate Chart</strong>
+      </div>
+    </div>
+
+  </div><!-- /.builder-panel -->
+</div><!-- /.builder-bar -->
+
+<div class="layout">
+  <aside class="sidebar glass">
+    <h2>Filters <span class="filter-count" id="filter-count" style="display:none"></span></h2>
+    <div class="filter-group">
+      <label>Category</label>
+      <div class="chips" id="chips-category">
+        <span class="chip active" data-group="category" data-value="all">All</span>
+        <span class="chip" data-group="category" data-value="Electronics">Electronics</span>
+        <span class="chip" data-group="category" data-value="Clothing">Clothing</span>
+        <span class="chip" data-group="category" data-value="Beauty">Beauty</span>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Gender</label>
+      <div class="chips" id="chips-gender">
+        <span class="chip active" data-group="gender" data-value="all">All</span>
+        <span class="chip" data-group="gender" data-value="Male">Male</span>
+        <span class="chip" data-group="gender" data-value="Female">Female</span>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Age Group</label>
+      <div class="chips" id="chips-ageGroup">
+        <span class="chip active" data-group="ageGroup" data-value="all">All</span>
+        <span class="chip" data-group="ageGroup" data-value="Adolescent">Adolescent</span>
+        <span class="chip" data-group="ageGroup" data-value="Middle Age">Middle Age</span>
+        <span class="chip" data-group="ageGroup" data-value="Old">Senior</span>
+      </div>
+    </div>
+    <button class="reset-btn" id="reset-btn">&#8635; Reset All Filters</button>
+  </aside>
+
+  <main class="content">
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-icon">&#128176;</div>
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value" id="kpi-revenue">$0</div>
+        <div class="kpi-note">FY 2023</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">&#128722;</div>
+        <div class="kpi-label">Transactions</div>
+        <div class="kpi-value" id="kpi-transactions">0</div>
+        <div class="kpi-note">All categories</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">&#128230;</div>
+        <div class="kpi-label">Units Sold</div>
+        <div class="kpi-value" id="kpi-units">0</div>
+        <div class="kpi-note">Across categories</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">&#128181;</div>
+        <div class="kpi-label">Avg Order Value</div>
+        <div class="kpi-value" id="kpi-aov">$0</div>
+        <div class="kpi-note">Per transaction</div>
+      </div>
+    </div>
+
+    <div class="section-label">Sales Overview</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Revenue by Category</h3>
+        <p class="sub">Total sales revenue per product category</p>
+        <div class="chart-mount" id="chart-category"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Revenue by Gender</h3>
+        <p class="sub">Cumulative revenue split across customer gender</p>
+        <div class="chart-mount" id="chart-gender"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Units Sold by Month</h3>
+        <p class="sub">Total units sold each month across all categories</p>
+        <div class="chart-mount" id="chart-month"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Transactions by Age Group</h3>
+        <p class="sub">Share of purchases per customer age segment</p>
+        <div class="chart-mount" id="chart-age"></div>
+      </div>
+    </div>
+
+    <div class="section-label">Deeper Analysis</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Revenue by Month</h3>
+        <p class="sub">Monthly sales revenue ($) across the full year</p>
+        <div class="chart-mount" id="chart-rev-month"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Avg Order Value by Category</h3>
+        <p class="sub">Average spend per transaction within each category</p>
+        <div class="chart-mount" id="chart-aov-cat"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Revenue by Day of Week</h3>
+        <p class="sub">Which days of the week generate the most revenue</p>
+        <div class="chart-mount" id="chart-dow"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Category Mix by Age Group</h3>
+        <p class="sub">How each age group splits their purchases across categories</p>
+        <div class="chart-mount" id="chart-cat-age"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Price Band Distribution</h3>
+        <p class="sub">Number of transactions per unit price range</p>
+        <div class="chart-mount" id="chart-price-band"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Order Quantity Distribution</h3>
+        <p class="sub">How many items customers typically buy per transaction</p>
+        <div class="chart-mount" id="chart-qty-dist"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>Made with IBM Bob</footer>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATASET
+═══════════════════════════════════════════ */
+const transactions = [{"id":1,"date":"11/24/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":2,"date":"2/27/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":3,"date":"1/13/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":4,"date":"5/21/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":5,"date":"5/6/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":6,"date":"4/25/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":7,"date":"3/13/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":8,"date":"2/22/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":9,"date":"12/13/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":10,"date":"10/7/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":11,"date":"2/14/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":12,"date":"10/30/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":13,"date":"8/5/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":14,"date":"1/17/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":15,"date":"1/16/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":16,"date":"2/17/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":17,"date":"4/22/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":18,"date":"4/30/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":19,"date":"9/16/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":20,"date":"11/5/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":21,"date":"1/14/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":22,"date":"10/15/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":23,"date":"4/12/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":24,"date":"11/29/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":25,"date":"12/26/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":26,"date":"10/7/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":27,"date":"8/3/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":28,"date":"4/23/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":29,"date":"8/18/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":30,"date":"10/29/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":31,"date":"5/23/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":32,"date":"1/4/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":33,"date":"3/23/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":34,"date":"12/24/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":35,"date":"8/5/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":36,"date":"6/24/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":37,"date":"5/23/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":38,"date":"3/21/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":39,"date":"4/21/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":40,"date":"6/22/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":41,"date":"2/22/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":42,"date":"2/17/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":43,"date":"7/14/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":44,"date":"2/19/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":45,"date":"7/3/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":46,"date":"6/26/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":47,"date":"11/6/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":48,"date":"5/16/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":49,"date":"1/23/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":50,"date":"8/24/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":51,"date":"10/2/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":52,"date":"3/5/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":53,"date":"7/13/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":54,"date":"2/10/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":55,"date":"10/10/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":56,"date":"5/31/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":57,"date":"11/18/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":58,"date":"11/13/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":59,"date":"7/5/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":60,"date":"10/23/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":61,"date":"4/9/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":62,"date":"12/27/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":63,"date":"2/5/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":64,"date":"1/24/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":65,"date":"12/5/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":66,"date":"4/27/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":67,"date":"5/29/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":68,"date":"2/10/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":69,"date":"4/30/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":70,"date":"2/21/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":71,"date":"7/14/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":72,"date":"5/23/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":73,"date":"8/21/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":74,"date":"11/22/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":75,"date":"7/6/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":76,"date":"3/25/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":77,"date":"7/9/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":78,"date":"7/1/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":79,"date":"4/18/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":80,"date":"12/10/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":81,"date":"5/17/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":82,"date":"12/26/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":83,"date":"12/16/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":84,"date":"11/28/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":85,"date":"2/6/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":86,"date":"11/8/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":87,"date":"11/22/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":88,"date":"3/29/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":89,"date":"10/1/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":90,"date":"5/6/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":91,"date":"3/25/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":92,"date":"8/25/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":93,"date":"7/14/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":94,"date":"5/19/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":95,"date":"11/24/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":96,"date":"12/19/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":97,"date":"10/13/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":98,"date":"4/23/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":99,"date":"12/17/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":100,"date":"6/16/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":101,"date":"1/29/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":102,"date":"4/28/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":103,"date":"1/17/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":104,"date":"6/11/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":105,"date":"7/25/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":106,"date":"5/18/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":107,"date":"2/3/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":108,"date":"4/19/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":109,"date":"10/18/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":110,"date":"6/11/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":111,"date":"4/19/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":112,"date":"12/2/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":113,"date":"9/13/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":114,"date":"7/22/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":115,"date":"11/26/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":116,"date":"8/23/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":117,"date":"3/15/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":118,"date":"5/16/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":119,"date":"3/13/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":120,"date":"5/7/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":121,"date":"10/15/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":122,"date":"10/3/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":123,"date":"5/15/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":124,"date":"10/27/2023","gender":"Male","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":125,"date":"8/8/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":126,"date":"10/26/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":127,"date":"7/24/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":128,"date":"7/5/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":129,"date":"4/23/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":130,"date":"3/12/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":131,"date":"9/18/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":132,"date":"9/10/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":133,"date":"2/16/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":134,"date":"1/25/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":135,"date":"2/26/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":136,"date":"3/20/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":137,"date":"11/18/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":138,"date":"3/23/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":139,"date":"12/15/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":140,"date":"8/5/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":141,"date":"11/2/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":142,"date":"2/2/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":143,"date":"7/17/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":144,"date":"7/15/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":145,"date":"11/2/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":146,"date":"8/28/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":147,"date":"9/28/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":148,"date":"5/9/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":149,"date":"10/11/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":150,"date":"1/6/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":151,"date":"12/15/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":152,"date":"2/28/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":153,"date":"12/16/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":154,"date":"10/2/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":155,"date":"5/17/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":156,"date":"11/25/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":157,"date":"6/24/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":158,"date":"2/27/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":159,"date":"5/31/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":160,"date":"8/11/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":161,"date":"3/22/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":162,"date":"8/21/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":163,"date":"1/2/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":164,"date":"5/15/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":165,"date":"9/14/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":166,"date":"4/2/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":167,"date":"9/17/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":168,"date":"2/24/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":169,"date":"11/17/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":170,"date":"6/2/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":171,"date":"11/24/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":172,"date":"9/17/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":173,"date":"11/8/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":174,"date":"4/12/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":175,"date":"3/20/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":176,"date":"7/11/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":177,"date":"3/24/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":178,"date":"10/4/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":179,"date":"9/29/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":180,"date":"1/1/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":181,"date":"11/3/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":182,"date":"6/15/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":183,"date":"9/8/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":184,"date":"1/10/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":185,"date":"2/27/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":186,"date":"7/5/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":187,"date":"6/7/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":188,"date":"5/3/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":189,"date":"1/30/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":190,"date":"5/4/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":191,"date":"10/18/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":192,"date":"2/10/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":193,"date":"2/13/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":194,"date":"9/6/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":195,"date":"2/5/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":196,"date":"9/30/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":197,"date":"3/6/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":198,"date":"3/7/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":199,"date":"12/4/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":200,"date":"9/1/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":201,"date":"10/9/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":202,"date":"3/26/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":203,"date":"5/16/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":204,"date":"9/28/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":205,"date":"11/7/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":206,"date":"8/5/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":207,"date":"4/19/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":208,"date":"10/4/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":209,"date":"12/20/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":210,"date":"4/13/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":211,"date":"1/1/2024","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":212,"date":"6/9/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":213,"date":"7/24/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":214,"date":"12/10/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":215,"date":"11/29/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":216,"date":"7/11/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":217,"date":"8/13/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":218,"date":"9/22/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":219,"date":"8/20/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":220,"date":"3/3/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":221,"date":"5/7/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":222,"date":"4/26/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":223,"date":"2/2/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":224,"date":"6/23/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":225,"date":"1/11/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":226,"date":"10/29/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":227,"date":"10/11/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":228,"date":"4/28/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":229,"date":"10/29/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":230,"date":"4/23/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":231,"date":"1/4/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":232,"date":"2/6/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":233,"date":"12/29/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":234,"date":"11/20/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":235,"date":"1/31/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":236,"date":"4/28/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":237,"date":"2/4/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":238,"date":"1/17/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":239,"date":"6/19/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":240,"date":"2/6/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":241,"date":"9/21/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":242,"date":"5/2/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":243,"date":"5/23/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":244,"date":"12/9/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":245,"date":"9/6/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":246,"date":"4/20/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":247,"date":"10/4/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":248,"date":"3/9/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":249,"date":"10/20/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":250,"date":"10/23/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":251,"date":"8/31/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":252,"date":"5/5/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":253,"date":"8/31/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":254,"date":"7/28/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":255,"date":"4/8/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":256,"date":"2/18/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":257,"date":"2/19/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":258,"date":"12/4/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":259,"date":"8/9/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":260,"date":"7/1/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":261,"date":"8/5/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":262,"date":"7/30/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":263,"date":"8/28/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":264,"date":"1/28/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":265,"date":"12/11/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":266,"date":"12/1/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":267,"date":"11/27/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":268,"date":"2/20/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":269,"date":"2/1/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":270,"date":"7/26/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":271,"date":"6/23/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":272,"date":"2/25/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":273,"date":"5/8/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":274,"date":"4/9/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":275,"date":"4/8/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":276,"date":"10/2/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":277,"date":"8/18/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":278,"date":"3/13/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":279,"date":"8/5/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":280,"date":"4/4/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":281,"date":"5/23/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":282,"date":"8/25/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":283,"date":"5/8/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":284,"date":"2/8/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":285,"date":"8/15/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":286,"date":"10/9/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":287,"date":"2/20/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":288,"date":"1/26/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":289,"date":"11/30/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":290,"date":"10/4/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":291,"date":"1/8/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":292,"date":"2/17/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":293,"date":"5/2/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":294,"date":"3/27/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":295,"date":"7/28/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":296,"date":"9/6/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":297,"date":"9/4/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":298,"date":"4/20/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":299,"date":"7/25/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":300,"date":"1/31/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":301,"date":"3/26/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":302,"date":"7/14/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":303,"date":"1/2/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":304,"date":"7/19/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":305,"date":"5/16/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":306,"date":"8/21/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":307,"date":"5/27/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":308,"date":"8/5/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":309,"date":"12/23/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":310,"date":"10/12/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":311,"date":"12/5/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":312,"date":"9/7/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":313,"date":"3/21/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":314,"date":"4/8/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":315,"date":"6/1/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":316,"date":"4/22/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":317,"date":"1/30/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":318,"date":"10/24/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":319,"date":"10/5/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":320,"date":"2/1/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":321,"date":"6/10/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":322,"date":"1/30/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":323,"date":"1/26/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":324,"date":"10/27/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":325,"date":"9/2/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":326,"date":"9/15/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":327,"date":"9/29/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":328,"date":"3/22/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":329,"date":"1/30/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":330,"date":"9/18/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":331,"date":"2/11/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":332,"date":"4/6/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":333,"date":"2/5/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":334,"date":"11/1/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":335,"date":"2/4/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":336,"date":"12/12/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":337,"date":"5/1/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":338,"date":"7/26/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":339,"date":"3/3/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":340,"date":"10/19/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":341,"date":"5/7/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":342,"date":"10/24/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":343,"date":"11/1/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":344,"date":"1/21/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":345,"date":"11/14/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":346,"date":"2/11/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":347,"date":"8/3/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":348,"date":"12/3/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":349,"date":"10/26/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":350,"date":"10/17/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":351,"date":"9/25/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":352,"date":"6/11/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":353,"date":"5/14/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":354,"date":"4/15/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":355,"date":"12/9/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":356,"date":"6/10/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":357,"date":"5/3/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":358,"date":"5/16/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":359,"date":"7/22/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":360,"date":"3/9/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":361,"date":"12/10/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":362,"date":"11/27/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":363,"date":"6/3/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":364,"date":"8/23/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":365,"date":"6/11/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":366,"date":"2/7/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":367,"date":"1/5/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":368,"date":"8/23/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":369,"date":"11/15/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":370,"date":"10/16/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":371,"date":"2/21/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":372,"date":"2/7/2023","gender":"Female","age":24,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":373,"date":"10/3/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":374,"date":"4/20/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":375,"date":"9/17/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":376,"date":"5/16/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":377,"date":"3/9/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":378,"date":"6/28/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":379,"date":"2/5/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":380,"date":"5/6/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":381,"date":"7/9/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":382,"date":"5/26/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":383,"date":"3/22/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":384,"date":"8/13/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":385,"date":"10/6/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":386,"date":"12/27/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":387,"date":"6/4/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":388,"date":"11/10/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":389,"date":"12/1/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":390,"date":"9/28/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":391,"date":"1/5/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":392,"date":"12/8/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":393,"date":"10/11/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":394,"date":"6/3/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":395,"date":"12/6/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":396,"date":"2/23/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":397,"date":"3/10/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":398,"date":"5/16/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":399,"date":"3/1/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":400,"date":"2/24/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":401,"date":"10/11/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":402,"date":"3/21/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":403,"date":"5/20/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":404,"date":"5/25/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":405,"date":"11/6/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":406,"date":"4/18/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":407,"date":"6/25/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":408,"date":"4/15/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":409,"date":"12/18/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":410,"date":"11/21/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":411,"date":"5/16/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":412,"date":"9/16/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":413,"date":"9/8/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":414,"date":"5/9/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":415,"date":"1/27/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":416,"date":"2/17/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":417,"date":"11/21/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":418,"date":"8/5/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":419,"date":"5/22/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":420,"date":"1/23/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":421,"date":"1/2/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":422,"date":"6/20/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":423,"date":"3/8/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":424,"date":"11/23/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":425,"date":"5/15/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":426,"date":"3/24/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":427,"date":"8/15/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":428,"date":"10/10/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":429,"date":"12/28/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":430,"date":"8/7/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":431,"date":"10/15/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":432,"date":"1/5/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":433,"date":"2/27/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":434,"date":"2/8/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":435,"date":"12/20/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":436,"date":"3/18/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":437,"date":"10/7/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":438,"date":"1/19/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":439,"date":"7/9/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":440,"date":"10/26/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":441,"date":"10/10/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":442,"date":"3/17/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":443,"date":"8/9/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":444,"date":"3/7/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":445,"date":"1/22/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":446,"date":"6/7/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":447,"date":"7/6/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":448,"date":"1/21/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":449,"date":"7/3/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":450,"date":"4/18/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":451,"date":"12/16/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":452,"date":"5/8/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":453,"date":"12/8/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":454,"date":"2/22/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":455,"date":"7/1/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":456,"date":"10/14/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":457,"date":"7/28/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":458,"date":"11/14/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":459,"date":"3/21/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":460,"date":"5/2/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":461,"date":"3/25/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":462,"date":"4/1/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":463,"date":"7/31/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":464,"date":"1/13/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":465,"date":"4/2/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":466,"date":"6/20/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":467,"date":"7/30/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":468,"date":"12/9/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":469,"date":"5/8/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":470,"date":"5/17/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":471,"date":"3/23/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":472,"date":"12/26/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":473,"date":"2/25/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":474,"date":"7/15/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":475,"date":"1/20/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":476,"date":"8/29/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":477,"date":"4/24/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":478,"date":"4/13/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":479,"date":"8/24/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":480,"date":"6/29/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":481,"date":"6/6/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":482,"date":"4/27/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":483,"date":"4/25/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":484,"date":"1/13/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":485,"date":"12/4/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":486,"date":"4/9/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":487,"date":"7/24/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":488,"date":"6/18/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":489,"date":"5/23/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":490,"date":"2/5/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":491,"date":"5/23/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":492,"date":"6/29/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":493,"date":"11/25/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":494,"date":"9/18/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":495,"date":"7/24/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":496,"date":"12/14/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":497,"date":"10/2/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":498,"date":"6/19/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":499,"date":"1/15/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":500,"date":"3/1/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":501,"date":"5/14/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":502,"date":"4/2/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":503,"date":"10/25/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":504,"date":"5/16/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":505,"date":"1/20/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":506,"date":"2/25/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":507,"date":"11/2/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":508,"date":"8/11/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":509,"date":"6/26/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":510,"date":"6/10/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":511,"date":"8/12/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":512,"date":"11/7/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":513,"date":"9/19/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":514,"date":"3/1/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":515,"date":"7/17/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":516,"date":"10/23/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":517,"date":"4/8/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":518,"date":"5/11/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":519,"date":"1/23/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":520,"date":"12/29/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":521,"date":"8/12/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":522,"date":"1/1/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":523,"date":"9/24/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":524,"date":"10/3/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":525,"date":"12/18/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":526,"date":"12/10/2023","gender":"Male","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":527,"date":"4/11/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":528,"date":"7/6/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":529,"date":"8/9/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":530,"date":"2/5/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":531,"date":"12/7/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":532,"date":"6/19/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":533,"date":"11/16/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":534,"date":"6/10/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":535,"date":"12/6/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":536,"date":"3/5/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":537,"date":"6/3/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":538,"date":"9/17/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":539,"date":"6/8/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":540,"date":"12/8/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":541,"date":"7/29/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":542,"date":"6/17/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":543,"date":"7/26/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":544,"date":"12/23/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":545,"date":"6/1/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":546,"date":"10/11/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":547,"date":"3/7/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":548,"date":"4/9/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":549,"date":"8/4/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":550,"date":"12/7/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":551,"date":"7/14/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":552,"date":"12/13/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":553,"date":"3/31/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":554,"date":"11/12/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":555,"date":"10/19/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":556,"date":"6/4/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":557,"date":"7/27/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":558,"date":"10/8/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":559,"date":"1/1/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":560,"date":"6/5/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":561,"date":"5/27/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":562,"date":"4/18/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":563,"date":"8/9/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":564,"date":"10/24/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":565,"date":"11/7/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":566,"date":"12/2/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":567,"date":"6/14/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":568,"date":"8/27/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":569,"date":"8/15/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":570,"date":"8/15/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":571,"date":"12/12/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":572,"date":"4/20/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":573,"date":"9/19/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":574,"date":"8/31/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":575,"date":"3/28/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":576,"date":"12/4/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":577,"date":"2/13/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":578,"date":"5/26/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":579,"date":"9/21/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":580,"date":"12/6/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":581,"date":"11/21/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":582,"date":"11/14/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":583,"date":"6/21/2023","gender":"Female","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":584,"date":"2/17/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":585,"date":"5/1/2023","gender":"Female","age":24,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":586,"date":"12/11/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":587,"date":"6/8/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":588,"date":"4/26/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":589,"date":"4/12/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":590,"date":"3/17/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":591,"date":"1/13/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":592,"date":"1/24/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":593,"date":"5/6/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":594,"date":"9/1/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":595,"date":"11/9/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":596,"date":"2/7/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":597,"date":"8/22/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":598,"date":"8/1/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":599,"date":"11/19/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":600,"date":"10/22/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":601,"date":"4/10/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":602,"date":"12/23/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":603,"date":"7/16/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":604,"date":"9/11/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":605,"date":"7/24/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":606,"date":"5/5/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":607,"date":"3/17/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":608,"date":"12/2/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":609,"date":"12/19/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":610,"date":"1/3/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":611,"date":"2/24/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":612,"date":"8/6/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":613,"date":"4/23/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":614,"date":"4/1/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":615,"date":"12/23/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":616,"date":"9/23/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":617,"date":"8/26/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":618,"date":"1/26/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":619,"date":"10/13/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":620,"date":"5/8/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":621,"date":"3/4/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":622,"date":"8/22/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":623,"date":"3/10/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":624,"date":"8/26/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":625,"date":"12/8/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":626,"date":"9/29/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":627,"date":"10/14/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":628,"date":"11/1/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":629,"date":"6/12/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":630,"date":"8/15/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":631,"date":"11/10/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":632,"date":"9/16/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":633,"date":"8/7/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":634,"date":"10/8/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":635,"date":"8/17/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":636,"date":"3/23/2023","gender":"Female","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":637,"date":"9/1/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":638,"date":"8/19/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":639,"date":"5/13/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":640,"date":"5/7/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":641,"date":"11/23/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":642,"date":"5/22/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":643,"date":"9/24/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":644,"date":"9/6/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":645,"date":"11/17/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":646,"date":"5/3/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":647,"date":"5/21/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":648,"date":"8/14/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":649,"date":"2/9/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":650,"date":"1/1/2024","gender":"Male","age":55,"ageGroup":"Old","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":651,"date":"5/27/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":652,"date":"5/1/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":653,"date":"5/20/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":654,"date":"6/21/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":655,"date":"6/13/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":656,"date":"10/4/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":657,"date":"2/11/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":658,"date":"3/12/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":659,"date":"3/19/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":660,"date":"4/29/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":661,"date":"7/16/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":662,"date":"12/22/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":663,"date":"3/20/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":664,"date":"12/28/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":665,"date":"4/20/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":666,"date":"2/2/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":667,"date":"8/1/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":668,"date":"7/28/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":669,"date":"6/19/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":670,"date":"10/5/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":671,"date":"8/27/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":672,"date":"8/1/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":673,"date":"2/1/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":674,"date":"4/16/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":675,"date":"8/4/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":676,"date":"7/19/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":677,"date":"10/27/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":678,"date":"12/23/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":679,"date":"1/11/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":680,"date":"10/22/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":681,"date":"7/14/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":682,"date":"9/2/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":683,"date":"1/4/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":684,"date":"6/30/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":685,"date":"6/2/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":686,"date":"7/19/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":687,"date":"8/3/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":688,"date":"10/3/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":689,"date":"10/7/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":690,"date":"11/5/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":691,"date":"4/23/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":692,"date":"9/7/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":693,"date":"4/23/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":694,"date":"5/20/2023","gender":"Female","age":39,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":695,"date":"8/12/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":696,"date":"9/6/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":697,"date":"1/15/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":698,"date":"7/19/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":699,"date":"6/22/2023","gender":"Female","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":700,"date":"12/9/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":701,"date":"12/14/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":702,"date":"7/27/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":703,"date":"3/26/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":704,"date":"8/28/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":705,"date":"3/7/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":706,"date":"11/15/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":707,"date":"10/1/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":708,"date":"1/14/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":709,"date":"7/21/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":710,"date":"10/31/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":711,"date":"10/16/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":712,"date":"12/6/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":713,"date":"1/14/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":714,"date":"2/12/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":715,"date":"11/26/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":716,"date":"8/8/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":717,"date":"3/11/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":718,"date":"8/25/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":719,"date":"4/4/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":720,"date":"1/26/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":721,"date":"5/14/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":722,"date":"7/14/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":723,"date":"6/17/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":724,"date":"4/19/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":725,"date":"8/21/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":726,"date":"6/17/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":727,"date":"6/22/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":728,"date":"7/14/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":729,"date":"5/23/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":730,"date":"8/4/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":731,"date":"5/10/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":732,"date":"2/11/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":733,"date":"8/29/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":734,"date":"1/10/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":735,"date":"10/4/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":736,"date":"1/27/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":737,"date":"6/29/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":738,"date":"4/25/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":739,"date":"11/29/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":740,"date":"2/5/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":741,"date":"11/30/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":742,"date":"1/21/2023","gender":"Female","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":743,"date":"1/16/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":744,"date":"5/7/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":745,"date":"4/13/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":746,"date":"1/11/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":747,"date":"11/15/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":748,"date":"3/20/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":749,"date":"5/3/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":750,"date":"3/6/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":751,"date":"8/31/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":752,"date":"12/9/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":753,"date":"2/28/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":754,"date":"10/16/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":755,"date":"4/22/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":756,"date":"8/27/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":757,"date":"12/25/2023","gender":"Female","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":758,"date":"5/12/2023","gender":"Male","age":64,"ageGroup":"Old","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":759,"date":"7/8/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":760,"date":"3/27/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":761,"date":"11/7/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":762,"date":"11/7/2023","gender":"Female","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":763,"date":"2/28/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":764,"date":"3/25/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":765,"date":"6/9/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":766,"date":"2/25/2023","gender":"Male","age":38,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":767,"date":"10/24/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":768,"date":"1/14/2023","gender":"Female","age":24,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":769,"date":"6/9/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":770,"date":"10/22/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":771,"date":"12/13/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":772,"date":"7/12/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":773,"date":"7/23/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":774,"date":"4/12/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":775,"date":"2/8/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":776,"date":"10/31/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":777,"date":"12/20/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":778,"date":"11/18/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":779,"date":"5/5/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":780,"date":"2/22/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":781,"date":"12/23/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":782,"date":"6/4/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":783,"date":"12/17/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":784,"date":"11/4/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":785,"date":"3/3/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":786,"date":"10/17/2023","gender":"Male","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":787,"date":"1/22/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":788,"date":"6/27/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":789,"date":"9/30/2023","gender":"Female","age":61,"ageGroup":"Old","category":"Clothing","quantity":4,"price":500.0,"total":2000.0},{"id":790,"date":"8/8/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":791,"date":"12/5/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":792,"date":"7/9/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":793,"date":"2/5/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":794,"date":"9/17/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":795,"date":"11/28/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":796,"date":"6/24/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":797,"date":"1/7/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":798,"date":"8/4/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":799,"date":"9/8/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":800,"date":"2/24/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":801,"date":"8/10/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":802,"date":"7/5/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":803,"date":"11/22/2023","gender":"Male","age":39,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":804,"date":"8/24/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":805,"date":"12/29/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":806,"date":"3/20/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":807,"date":"8/11/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":808,"date":"4/1/2023","gender":"Male","age":33,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":809,"date":"9/25/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":810,"date":"11/30/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":811,"date":"5/19/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":812,"date":"11/12/2023","gender":"Male","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":813,"date":"10/3/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":814,"date":"9/5/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":815,"date":"8/27/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":816,"date":"8/12/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":817,"date":"10/31/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":818,"date":"5/18/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":819,"date":"6/15/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":820,"date":"5/6/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":821,"date":"2/14/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":822,"date":"5/23/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":823,"date":"8/19/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":824,"date":"5/5/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":825,"date":"8/26/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":826,"date":"10/19/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":827,"date":"11/9/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":828,"date":"12/9/2023","gender":"Female","age":33,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":829,"date":"7/14/2023","gender":"Male","age":61,"ageGroup":"Old","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":830,"date":"6/22/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":831,"date":"1/15/2023","gender":"Male","age":27,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":832,"date":"9/11/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":500.0,"total":2000.0},{"id":833,"date":"6/16/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":834,"date":"4/4/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":835,"date":"9/7/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":836,"date":"4/19/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":837,"date":"7/1/2023","gender":"Male","age":18,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":838,"date":"5/13/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":300.0,"total":600.0},{"id":839,"date":"6/24/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":840,"date":"5/24/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":841,"date":"11/2/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":842,"date":"12/26/2023","gender":"Female","age":47,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":843,"date":"5/22/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":844,"date":"10/12/2023","gender":"Male","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":845,"date":"1/6/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":846,"date":"9/22/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":847,"date":"4/8/2023","gender":"Female","age":18,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":848,"date":"2/13/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":849,"date":"5/4/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":850,"date":"7/28/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":851,"date":"9/8/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":852,"date":"10/12/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":853,"date":"5/4/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":854,"date":"12/20/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":855,"date":"9/1/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":856,"date":"11/27/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":857,"date":"12/31/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":858,"date":"9/9/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":859,"date":"8/18/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Electronics","quantity":3,"price":500.0,"total":1500.0},{"id":860,"date":"1/9/2023","gender":"Male","age":63,"ageGroup":"Old","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":861,"date":"2/17/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":862,"date":"5/31/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":300.0,"total":1200.0},{"id":863,"date":"4/24/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":864,"date":"7/27/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":865,"date":"12/21/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":866,"date":"5/5/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":867,"date":"6/6/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":868,"date":"12/6/2023","gender":"Female","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":869,"date":"10/25/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":500.0,"total":1500.0},{"id":870,"date":"7/8/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":871,"date":"8/31/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Beauty","quantity":2,"price":30.0,"total":60.0},{"id":872,"date":"10/11/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":873,"date":"9/29/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":874,"date":"6/26/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":875,"date":"8/6/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":876,"date":"10/9/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":877,"date":"6/19/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":878,"date":"6/30/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":879,"date":"12/26/2023","gender":"Male","age":23,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":880,"date":"8/21/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":881,"date":"5/19/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":882,"date":"6/6/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":883,"date":"5/9/2023","gender":"Male","age":40,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":884,"date":"4/29/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":885,"date":"3/3/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":886,"date":"4/9/2023","gender":"Male","age":37,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":887,"date":"6/11/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":4,"price":25.0,"total":100.0},{"id":888,"date":"3/3/2023","gender":"Female","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":25.0,"total":100.0},{"id":889,"date":"10/2/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":890,"date":"12/20/2023","gender":"Male","age":34,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":891,"date":"4/5/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":892,"date":"4/9/2023","gender":"Male","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":893,"date":"4/21/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":894,"date":"9/5/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":895,"date":"5/22/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Clothing","quantity":4,"price":30.0,"total":120.0},{"id":896,"date":"10/29/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":897,"date":"9/26/2023","gender":"Female","age":64,"ageGroup":"Old","category":"Electronics","quantity":2,"price":50.0,"total":100.0},{"id":898,"date":"11/2/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":30.0,"total":90.0},{"id":899,"date":"5/25/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":300.0,"total":600.0},{"id":900,"date":"2/21/2023","gender":"Male","age":21,"ageGroup":"Adolescent","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":901,"date":"4/10/2023","gender":"Male","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":902,"date":"6/1/2023","gender":"Female","age":54,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":903,"date":"4/27/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":904,"date":"7/4/2023","gender":"Male","age":28,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":905,"date":"4/2/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":906,"date":"6/4/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":907,"date":"1/8/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":908,"date":"12/29/2023","gender":"Male","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":300.0,"total":1200.0},{"id":909,"date":"10/1/2023","gender":"Male","age":26,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":910,"date":"3/6/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":911,"date":"5/21/2023","gender":"Male","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":912,"date":"1/24/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":50.0,"total":150.0},{"id":913,"date":"1/28/2023","gender":"Male","age":29,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":914,"date":"10/11/2023","gender":"Female","age":59,"ageGroup":"Old","category":"Electronics","quantity":1,"price":500.0,"total":500.0},{"id":915,"date":"5/30/2023","gender":"Female","age":26,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":916,"date":"12/24/2023","gender":"Female","age":32,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":917,"date":"3/6/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":918,"date":"11/23/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":30.0,"total":90.0},{"id":919,"date":"9/9/2023","gender":"Female","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":2,"price":25.0,"total":50.0},{"id":920,"date":"2/22/2023","gender":"Female","age":28,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":921,"date":"1/7/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":922,"date":"10/21/2023","gender":"Male","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":50.0,"total":50.0},{"id":923,"date":"5/26/2023","gender":"Male","age":32,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":300.0,"total":900.0},{"id":924,"date":"8/29/2023","gender":"Male","age":55,"ageGroup":"Old","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":925,"date":"9/3/2023","gender":"Male","age":25,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":926,"date":"8/14/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":927,"date":"6/24/2023","gender":"Male","age":43,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":928,"date":"4/5/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":929,"date":"1/27/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":3,"price":25.0,"total":75.0},{"id":930,"date":"5/10/2023","gender":"Male","age":54,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":931,"date":"9/2/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":30.0,"total":120.0},{"id":932,"date":"2/28/2023","gender":"Female","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":933,"date":"2/3/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":934,"date":"7/25/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":935,"date":"9/9/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":936,"date":"2/7/2023","gender":"Male","age":57,"ageGroup":"Old","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":937,"date":"10/23/2023","gender":"Female","age":62,"ageGroup":"Old","category":"Beauty","quantity":1,"price":500.0,"total":500.0},{"id":938,"date":"11/19/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":939,"date":"12/18/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":300.0,"total":300.0},{"id":940,"date":"1/28/2023","gender":"Female","age":20,"ageGroup":"Adolescent","category":"Electronics","quantity":1,"price":30.0,"total":30.0},{"id":941,"date":"3/19/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":942,"date":"3/18/2023","gender":"Male","age":51,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":943,"date":"10/16/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":4,"price":300.0,"total":1200.0},{"id":944,"date":"6/5/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":25.0,"total":50.0},{"id":945,"date":"2/13/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":946,"date":"5/8/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":947,"date":"3/2/2023","gender":"Male","age":50,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":300.0,"total":300.0},{"id":948,"date":"10/13/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":949,"date":"8/2/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":950,"date":"11/7/2023","gender":"Male","age":36,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":951,"date":"11/2/2023","gender":"Male","age":33,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":50.0,"total":100.0},{"id":952,"date":"11/13/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":953,"date":"4/26/2023","gender":"Male","age":45,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":954,"date":"9/25/2023","gender":"Female","age":50,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":300.0,"total":900.0},{"id":955,"date":"7/14/2023","gender":"Male","age":58,"ageGroup":"Old","category":"Clothing","quantity":1,"price":25.0,"total":25.0},{"id":956,"date":"8/19/2023","gender":"Male","age":30,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":500.0,"total":1500.0},{"id":957,"date":"8/15/2023","gender":"Female","age":60,"ageGroup":"Old","category":"Electronics","quantity":4,"price":30.0,"total":120.0},{"id":958,"date":"6/2/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":959,"date":"10/29/2023","gender":"Female","age":42,"ageGroup":"Middle Age","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":960,"date":"8/8/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":961,"date":"6/6/2023","gender":"Male","age":53,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":50.0,"total":200.0},{"id":962,"date":"10/19/2023","gender":"Male","age":44,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":30.0,"total":60.0},{"id":963,"date":"11/14/2023","gender":"Female","age":55,"ageGroup":"Old","category":"Beauty","quantity":1,"price":50.0,"total":50.0},{"id":964,"date":"1/31/2023","gender":"Male","age":24,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":965,"date":"11/9/2023","gender":"Male","age":22,"ageGroup":"Adolescent","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":966,"date":"2/20/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Electronics","quantity":2,"price":500.0,"total":1000.0},{"id":967,"date":"4/17/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":968,"date":"11/17/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":969,"date":"4/19/2023","gender":"Female","age":40,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":970,"date":"5/16/2023","gender":"Male","age":59,"ageGroup":"Old","category":"Electronics","quantity":4,"price":500.0,"total":2000.0},{"id":971,"date":"12/5/2023","gender":"Female","age":27,"ageGroup":"Adolescent","category":"Electronics","quantity":4,"price":50.0,"total":200.0},{"id":972,"date":"2/11/2023","gender":"Male","age":49,"ageGroup":"Middle Age","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":973,"date":"3/22/2023","gender":"Male","age":60,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":974,"date":"5/3/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Beauty","quantity":1,"price":30.0,"total":30.0},{"id":975,"date":"3/30/2023","gender":"Female","age":56,"ageGroup":"Old","category":"Clothing","quantity":4,"price":50.0,"total":200.0},{"id":976,"date":"10/10/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":300.0,"total":600.0},{"id":977,"date":"2/8/2023","gender":"Female","age":35,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":978,"date":"3/22/2023","gender":"Female","age":53,"ageGroup":"Middle Age","category":"Clothing","quantity":3,"price":50.0,"total":150.0},{"id":979,"date":"1/2/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Beauty","quantity":1,"price":25.0,"total":25.0},{"id":980,"date":"7/29/2023","gender":"Female","age":31,"ageGroup":"Adolescent","category":"Electronics","quantity":3,"price":25.0,"total":75.0},{"id":981,"date":"8/19/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":982,"date":"12/19/2023","gender":"Female","age":46,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":983,"date":"11/1/2023","gender":"Female","age":29,"ageGroup":"Adolescent","category":"Clothing","quantity":1,"price":300.0,"total":300.0},{"id":984,"date":"8/29/2023","gender":"Male","age":56,"ageGroup":"Old","category":"Clothing","quantity":1,"price":500.0,"total":500.0},{"id":985,"date":"5/30/2023","gender":"Female","age":19,"ageGroup":"Adolescent","category":"Electronics","quantity":2,"price":25.0,"total":50.0},{"id":986,"date":"1/17/2023","gender":"Female","age":49,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":500.0,"total":1000.0},{"id":987,"date":"4/29/2023","gender":"Female","age":30,"ageGroup":"Adolescent","category":"Clothing","quantity":3,"price":300.0,"total":900.0},{"id":988,"date":"5/28/2023","gender":"Female","age":63,"ageGroup":"Old","category":"Clothing","quantity":3,"price":25.0,"total":75.0},{"id":989,"date":"12/28/2023","gender":"Female","age":44,"ageGroup":"Middle Age","category":"Electronics","quantity":1,"price":25.0,"total":25.0},{"id":990,"date":"5/25/2023","gender":"Female","age":58,"ageGroup":"Old","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":991,"date":"12/26/2023","gender":"Female","age":34,"ageGroup":"Middle Age","category":"Clothing","quantity":2,"price":50.0,"total":100.0},{"id":992,"date":"8/21/2023","gender":"Female","age":57,"ageGroup":"Old","category":"Electronics","quantity":2,"price":30.0,"total":60.0},{"id":993,"date":"2/6/2023","gender":"Female","age":48,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":994,"date":"12/18/2023","gender":"Female","age":51,"ageGroup":"Middle Age","category":"Beauty","quantity":2,"price":500.0,"total":1000.0},{"id":995,"date":"4/30/2023","gender":"Female","age":41,"ageGroup":"Middle Age","category":"Clothing","quantity":1,"price":30.0,"total":30.0},{"id":996,"date":"5/16/2023","gender":"Male","age":62,"ageGroup":"Old","category":"Clothing","quantity":1,"price":50.0,"total":50.0},{"id":997,"date":"11/17/2023","gender":"Male","age":52,"ageGroup":"Middle Age","category":"Beauty","quantity":3,"price":30.0,"total":90.0},{"id":998,"date":"10/29/2023","gender":"Female","age":23,"ageGroup":"Adolescent","category":"Beauty","quantity":4,"price":25.0,"total":100.0},{"id":999,"date":"12/5/2023","gender":"Female","age":36,"ageGroup":"Middle Age","category":"Electronics","quantity":3,"price":50.0,"total":150.0},{"id":1000,"date":"4/12/2023","gender":"Male","age":47,"ageGroup":"Middle Age","category":"Electronics","quantity":4,"price":30.0,"total":120.0}];
+
+/* ═══════════════════════════════════════════
+   PALETTE
+═══════════════════════════════════════════ */
+const C = {
+  blue:'#0f62fe', teal:'#009d9a', green:'#24a148',
+  yellow:'#d4a017', red:'#da1e28', purple:'#8a3ffc',
+  muted:'#6f6f6f', grid:'#eaedf2', text:'#161616',
+};
+
+/* ═══════════════════════════════════════════
+   SHARED ECHARTS STYLES
+═══════════════════════════════════════════ */
+const axisStyle = {
+  axisLine:  { lineStyle: { color: C.grid } },
+  axisTick:  { show: false },
+  axisLabel: { color: C.muted, fontSize: 11 },
+  splitLine: { lineStyle: { color: C.grid, type: 'dashed' } },
+};
+const tt = {
+  backgroundColor:'#fff', borderColor:'#dde1ea', borderWidth:1,
+  textStyle:{ color:C.text, fontSize:12 },
+  extraCssText:'box-shadow:0 4px 16px rgba(0,0,0,0.10);border-radius:8px;',
+};
+
+/* ═══════════════════════════════════════════
+   MECHANICAL FLICKER
+   Triggers a CSS keyframe animation on the
+   element whenever the displayed value changes.
+   The void reflow trick restarts the animation
+   even if the class is already present.
+═══════════════════════════════════════════ */
+function flickerSet(id, newVal) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // Parse the target value to know its shape (prefix, magnitude, length)
+  const hasDollar = newVal.startsWith('$');
+  const digits = newVal.replace(/[^0-9]/g, '');
+  const targetNum = parseInt(digits, 10) || 0;
+  const magnitude = Math.max(targetNum, 1);
+
+  // Generate a random number of similar magnitude and same digit-length
+  function randLike() {
+    const spread = magnitude * 0.35;
+    const n = Math.max(0, Math.round(magnitude + (Math.random() * spread * 2 - spread)));
+    const formatted = n.toLocaleString();
+    // Pad/trim to match digit count of target so display width stays stable
+    return hasDollar ? '$' + formatted : formatted;
+  }
+
+  // Scramble phase: write random values at ~60ms intervals for 820ms,
+  // then snap to the real value at the end
+  const DURATION = 820;  // ms — matches the 0.88s CSS animation
+  const INTERVAL = 60;   // ms between scramble frames
+  const steps = Math.floor(DURATION / INTERVAL);
+  let step = 0;
+
+  el.classList.remove('flicker');
+  void el.offsetWidth; // restart CSS animation
+  el.classList.add('flicker');
+
+  const ticker = setInterval(() => {
+    step++;
+    if (step >= steps) {
+      clearInterval(ticker);
+      el.textContent = newVal;
+      el.classList.remove('flicker');
+    } else {
+      el.textContent = randLike();
+    }
+  }, INTERVAL);
+}
+
+/* ═══════════════════════════════════════════
+   FILTER STATE
+═══════════════════════════════════════════ */
+const activeFilters = { category: null, gender: null, ageGroup: null };
+
+function applyFilters() {
+  const filtered = transactions.filter(t => {
+    if (activeFilters.category && t.category !== activeFilters.category) return false;
+    if (activeFilters.gender   && t.gender   !== activeFilters.gender)   return false;
+    if (activeFilters.ageGroup && t.ageGroup !== activeFilters.ageGroup) return false;
+    return true;
+  });
+
+  updateKPIs(filtered);
+  renderCategoryChart(filtered);
+  renderGenderChart(filtered);
+  renderMonthChart(filtered);
+  renderAgeChart(filtered);
+  renderRevMonthChart(filtered);
+  renderAovCatChart(filtered);
+  renderDowChart(filtered);
+  renderCatAgeChart(filtered);
+  renderPriceBandChart(filtered);
+  renderQtyDistChart(filtered);
+
+  const active = Object.values(activeFilters).filter(Boolean).length;
+  const badge = document.getElementById('filter-count');
+  badge.textContent = active;
+  badge.style.display = active > 0 ? 'inline-block' : 'none';
+}
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const group = chip.dataset.group;
+    const value = chip.dataset.value;
+    document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeFilters[group] = value === 'all' ? null : value;
+    applyFilters();
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  activeFilters.category = activeFilters.gender = activeFilters.ageGroup = null;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.value === 'all'));
+  applyFilters();
+});
+
+/* ═══════════════════════════════════════════
+   KPI UPDATER
+═══════════════════════════════════════════ */
+function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtN(n) { return Math.round(n).toLocaleString(); }
+
+function updateKPIs(data) {
+  const revenue = data.reduce((s, t) => s + t.total, 0);
+  const units   = data.reduce((s, t) => s + t.quantity, 0);
+  const aov     = data.length ? revenue / data.length : 0;
+  flickerSet('kpi-revenue',      fmt$(revenue));
+  flickerSet('kpi-transactions', fmtN(data.length));
+  flickerSet('kpi-units',        fmtN(units));
+  flickerSet('kpi-aov',          fmt$(aov));
+}
+
+/* ═══════════════════════════════════════════
+   CHART INSTANCES
+═══════════════════════════════════════════ */
+const chartCategory  = echarts.init(document.getElementById('chart-category'));
+const chartGender    = echarts.init(document.getElementById('chart-gender'));
+const chartMonth     = echarts.init(document.getElementById('chart-month'));
+const chartAge       = echarts.init(document.getElementById('chart-age'));
+const chartRevMonth  = echarts.init(document.getElementById('chart-rev-month'));
+const chartAovCat    = echarts.init(document.getElementById('chart-aov-cat'));
+const chartDow       = echarts.init(document.getElementById('chart-dow'));
+const chartCatAge    = echarts.init(document.getElementById('chart-cat-age'));
+const chartPriceBand = echarts.init(document.getElementById('chart-price-band'));
+const chartQtyDist   = echarts.init(document.getElementById('chart-qty-dist'));
+
+const ALL_CHARTS = [chartCategory,chartGender,chartMonth,chartAge,
+                    chartRevMonth,chartAovCat,chartDow,chartCatAge,
+                    chartPriceBand,chartQtyDist];
+
+/* ═══════════════════════════════════════════
+   ORIGINAL CHARTS
+═══════════════════════════════════════════ */
+function renderCategoryChart(data) {
+  const cats = ['Beauty','Clothing','Electronics'];
+  const rev  = { Beauty:0, Clothing:0, Electronics:0 };
+  data.forEach(t => { if (rev[t.category]!==undefined) rev[t.category]+=t.total; });
+  chartCategory.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>$${p[0].value.toLocaleString()}`},
+    grid:{left:80,right:60,top:16,bottom:24},
+    xAxis:{type:'value',...axisStyle,axisLabel:{...axisStyle.axisLabel,formatter:v=>'$'+(v/1000).toFixed(0)+'k'}},
+    yAxis:{type:'category',data:cats,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    series:[{type:'bar',barMaxWidth:36,
+      data:cats.map((c,i)=>({value:rev[c],itemStyle:{color:[C.purple,C.teal,C.blue][i],borderRadius:[0,4,4,0]}})),
+      label:{show:true,position:'right',formatter:p=>'$'+p.value.toLocaleString(),color:C.muted,fontSize:11}}]
+  },true);
+}
+
+function renderGenderChart(data) {
+  const rev = {Male:0,Female:0};
+  data.forEach(t => { if (rev[t.gender]!==undefined) rev[t.gender]+=t.total; });
+  chartGender.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>$${p[0].value.toLocaleString()}`},
+    grid:{left:56,right:20,top:16,bottom:32},
+    xAxis:{type:'category',data:['Male','Female'],...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle,axisLabel:{...axisStyle.axisLabel,formatter:v=>'$'+(v/1000).toFixed(0)+'k'}},
+    series:[{type:'bar',barMaxWidth:56,
+      data:[{value:rev['Male'],itemStyle:{color:C.blue,borderRadius:[4,4,0,0]}},{value:rev['Female'],itemStyle:{color:C.purple,borderRadius:[4,4,0,0]}}],
+      label:{show:true,position:'top',formatter:p=>'$'+p.value.toLocaleString(),color:C.muted,fontSize:11}}]
+  },true);
+}
+
+function renderMonthChart(data) {
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const counts=new Array(12).fill(0);
+  data.forEach(t=>{const m=parseInt(t.date.split('/')[0],10)-1;if(m>=0&&m<12)counts[m]+=t.quantity;});
+  chartMonth.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',formatter:p=>`<b>${p[0].name}</b><br/>${p[0].value.toLocaleString()} units`},
+    grid:{left:48,right:20,top:20,bottom:32},
+    xAxis:{type:'category',data:months,boundaryGap:false,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle},
+    series:[{type:'line',smooth:true,symbol:'circle',symbolSize:6,
+      lineStyle:{color:C.teal,width:2.5},itemStyle:{color:C.teal},
+      areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(0,157,154,0.18)'},{offset:1,color:'rgba(0,157,154,0.01)'}]}},
+      data:counts,label:{show:true,position:'top',fontSize:10,color:C.muted}}]
+  },true);
+}
+
+function renderAgeChart(data) {
+  const groups={'Adolescent':0,'Middle Age':0,'Old':0};
+  data.forEach(t=>{if(groups[t.ageGroup]!==undefined)groups[t.ageGroup]++;});
+  const colours={'Adolescent':C.green,'Middle Age':C.blue,'Old':C.yellow};
+  const labels={'Adolescent':'Adolescent','Middle Age':'Middle Age','Old':'Senior'};
+  chartAge.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'item',formatter:p=>`<b>${p.name}</b><br/>${p.value.toLocaleString()} txns (${p.percent}%)`},
+    legend:{bottom:6,left:'center',itemWidth:10,itemHeight:10,textStyle:{color:C.text,fontSize:11}},
+    series:[{type:'pie',radius:['40%','68%'],center:['50%','44%'],avoidLabelOverlap:true,
+      label:{show:true,formatter:'{b}\n{d}%',fontSize:11,color:C.text},
+      labelLine:{length:10,length2:8},
+      data:Object.entries(groups).map(([k,v])=>({value:v,name:labels[k],itemStyle:{color:colours[k]}}))}]
+  },true);
+}
+
+/* ═══════════════════════════════════════════
+   EXTENDED CHARTS
+═══════════════════════════════════════════ */
+function renderRevMonthChart(data) {
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rev=new Array(12).fill(0);
+  data.forEach(t=>{const m=parseInt(t.date.split('/')[0],10)-1;if(m>=0&&m<12)rev[m]+=t.total;});
+  chartRevMonth.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>$${p[0].value.toLocaleString()}`},
+    grid:{left:56,right:16,top:20,bottom:32},
+    xAxis:{type:'category',data:months,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle,axisLabel:{...axisStyle.axisLabel,formatter:v=>'$'+(v/1000).toFixed(0)+'k'}},
+    series:[{type:'bar',barMaxWidth:28,
+      data:rev.map(v=>({value:v,itemStyle:{color:C.blue,borderRadius:[3,3,0,0]}})),
+      label:{show:false}}]
+  },true);
+}
+
+function renderAovCatChart(data) {
+  const cats=['Beauty','Clothing','Electronics'];
+  const sums={Beauty:0,Clothing:0,Electronics:0},cnts={Beauty:0,Clothing:0,Electronics:0};
+  data.forEach(t=>{if(sums[t.category]!==undefined){sums[t.category]+=t.total;cnts[t.category]++;}});
+  const aovs=cats.map(c=>cnts[c]?Math.round(sums[c]/cnts[c]):0);
+  chartAovCat.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>Avg $${p[0].value.toLocaleString()}`},
+    grid:{left:56,right:20,top:16,bottom:32},
+    xAxis:{type:'category',data:cats,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle,axisLabel:{...axisStyle.axisLabel,formatter:v=>'$'+v}},
+    series:[{type:'bar',barMaxWidth:56,
+      data:aovs.map((v,i)=>({value:v,itemStyle:{color:[C.purple,C.teal,C.blue][i],borderRadius:[4,4,0,0]}})),
+      label:{show:true,position:'top',formatter:p=>'$'+p.value.toLocaleString(),color:C.muted,fontSize:11}}]
+  },true);
+}
+
+function renderDowChart(data) {
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const rev=new Array(7).fill(0);
+  data.forEach(t=>{
+    const parts=t.date.split('/');
+    const d=new Date(parseInt(parts[2]),parseInt(parts[0])-1,parseInt(parts[1]));
+    rev[d.getDay()]+=t.total;
+  });
+  const maxIdx=rev.indexOf(Math.max(...rev));
+  chartDow.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>$${p[0].value.toLocaleString()}`},
+    grid:{left:56,right:16,top:16,bottom:32},
+    xAxis:{type:'category',data:days,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle,axisLabel:{...axisStyle.axisLabel,formatter:v=>'$'+(v/1000).toFixed(0)+'k'}},
+    series:[{type:'bar',barMaxWidth:40,
+      data:rev.map((v,i)=>({value:v,itemStyle:{color:i===maxIdx?C.red:C.blue,borderRadius:[3,3,0,0]}})),
+      label:{show:false}}]
+  },true);
+}
+
+function renderCatAgeChart(data) {
+  const ageGroups=['Adolescent','Middle Age','Old'];
+  const ageLabels=['Adolescent','Middle Age','Senior'];
+  const cats=['Electronics','Clothing','Beauty'];
+  const catColours=[C.blue,C.teal,C.purple];
+  const mat={};
+  ageGroups.forEach(a=>{mat[a]={Electronics:0,Clothing:0,Beauty:0};});
+  data.forEach(t=>{if(mat[t.ageGroup]&&mat[t.ageGroup][t.category]!==undefined)mat[t.ageGroup][t.category]++;});
+  const series=cats.map((cat,i)=>({
+    name:cat,type:'bar',stack:'total',barMaxWidth:48,
+    itemStyle:{color:catColours[i]},
+    data:ageGroups.map(a=>mat[a][cat]),
+    label:{show:false},
+  }));
+  chartCatAge.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{top:4,right:8,itemWidth:10,itemHeight:10,textStyle:{color:C.text,fontSize:10}},
+    grid:{left:72,right:16,top:32,bottom:32},
+    xAxis:{type:'value',...axisStyle},
+    yAxis:{type:'category',data:ageLabels,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    series,
+  },true);
+}
+
+function renderPriceBandChart(data) {
+  const bands=['$0–25','$26–50','$51–100','$101–200','$201–500','$500+'];
+  const counts=new Array(6).fill(0);
+  data.forEach(t=>{
+    const p=t.price;
+    if(p<=25)counts[0]++;
+    else if(p<=50)counts[1]++;
+    else if(p<=100)counts[2]++;
+    else if(p<=200)counts[3]++;
+    else if(p<=500)counts[4]++;
+    else counts[5]++;
+  });
+  chartPriceBand.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>${p[0].value} transactions`},
+    grid:{left:48,right:16,top:16,bottom:40},
+    xAxis:{type:'category',data:bands,...axisStyle,axisLabel:{...axisStyle.axisLabel,color:C.text,rotate:20}},
+    yAxis:{type:'value',...axisStyle,name:'Transactions',nameTextStyle:{color:C.muted,fontSize:10}},
+    series:[{type:'bar',barMaxWidth:44,
+      data:counts.map(v=>({value:v,itemStyle:{color:C.green,borderRadius:[3,3,0,0]}})),
+      label:{show:true,position:'top',fontSize:10,color:C.muted}}]
+  },true);
+}
+
+function renderQtyDistChart(data) {
+  const maxQ=Math.max(...data.map(t=>t.quantity),0);
+  const cap=Math.min(maxQ,10);
+  if(cap<1){chartQtyDist.clear();return;}
+  const labels=Array.from({length:cap},(_,i)=>String(i+1));
+  const counts=new Array(cap).fill(0);
+  data.forEach(t=>{const q=Math.min(t.quantity,cap);if(q>=1)counts[q-1]++;});
+  const colScale=[C.blue,C.teal,C.green,C.yellow,C.purple,C.red,C.blue,C.teal,C.green,C.yellow];
+  chartQtyDist.setOption({
+    animation:true,
+    tooltip:{...tt,trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name} item${p[0].name==='1'?'':'s'}</b><br/>${p[0].value} transactions`},
+    grid:{left:48,right:16,top:16,bottom:32},
+    xAxis:{type:'category',data:labels,...axisStyle,
+      name:'Units per Transaction',nameLocation:'middle',nameGap:24,nameTextStyle:{color:C.muted,fontSize:10},
+      axisLabel:{...axisStyle.axisLabel,color:C.text}},
+    yAxis:{type:'value',...axisStyle},
+    series:[{type:'bar',barMaxWidth:44,
+      data:counts.map((v,i)=>({value:v,itemStyle:{color:colScale[i],borderRadius:[3,3,0,0]}})),
+      label:{show:true,position:'top',fontSize:10,color:C.muted}}]
+  },true);
+}
+
+/* ═══════════════════════════════════════════
+   INIT + RESIZE
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => { applyFilters(); });
+window.addEventListener('resize', () => { ALL_CHARTS.forEach(c => c.resize()); });
+
+/* ═══════════════════════════════════════════
+   CHART BUILDER
+═══════════════════════════════════════════ */
+
+/* ── Toggle open/close ── */
+document.getElementById('builder-toggle').addEventListener('click', () => {
+  const toggle = document.getElementById('builder-toggle');
+  const panel  = document.getElementById('builder-panel');
+  toggle.classList.toggle('open');
+  panel.classList.toggle('open');
+});
+
+/* ── Builder chip multi-select ── */
+document.querySelectorAll('.bc-chip').forEach(chip => {
+  chip.addEventListener('click', () => chip.classList.toggle('bc-active'));
+});
+
+/* ── Helper: get selected bc-chip values for a group ── */
+function bcSelected(groupId) {
+  return [...document.querySelectorAll(`#${groupId} .bc-chip.bc-active`)]
+    .map(c => c.dataset.bcval);
+}
+
+/* ── Dimension helpers ── */
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const PRICE_BANDS = ['$0–25','$26–50','$51–100','$101–200','$201–500','$500+'];
+
+function getDimKey(t, groupBy) {
+  switch (groupBy) {
+    case 'month':     return parseInt(t.date.split('/')[0], 10) - 1; // 0-11
+    case 'category':  return t.category;
+    case 'gender':    return t.gender;
+    case 'ageGroup':  return t.ageGroup === 'Old' ? 'Senior' : t.ageGroup;
+    case 'dow': {
+      const p = t.date.split('/');
+      return new Date(+p[2], +p[0]-1, +p[1]).getDay(); // 0-6
+    }
+    case 'priceBand': {
+      const p = t.price;
+      if (p <= 25)  return '$0–25';
+      if (p <= 50)  return '$26–50';
+      if (p <= 100) return '$51–100';
+      if (p <= 200) return '$101–200';
+      if (p <= 500) return '$201–500';
+      return '$500+';
+    }
+    case 'quantity': return String(t.quantity);
+    default: return t.category;
+  }
+}
+
+function dimLabels(groupBy, data) {
+  switch (groupBy) {
+    case 'month':    return MONTHS;
+    case 'dow':      return DAYS;
+    case 'priceBand':return PRICE_BANDS;
+    case 'quantity': {
+      const maxQ = Math.max(...data.map(t => t.quantity), 1);
+      return Array.from({length: Math.min(maxQ, 10)}, (_, i) => String(i+1));
+    }
+    case 'ageGroup': return ['Adolescent','Middle Age','Senior'];
+    case 'gender':   return ['Male','Female'];
+    case 'category': return ['Electronics','Clothing','Beauty'];
+    default: return [...new Set(data.map(t => getDimKey(t, groupBy)))].sort();
+  }
+}
+
+function getMetricValue(t, metric) {
+  switch (metric) {
+    case 'revenue':      return t.total;
+    case 'transactions': return 1;
+    case 'units':        return t.quantity;
+    case 'aov':          return t.total; // accumulated then divided
+    default: return t.total;
+  }
+}
+
+function metricLabel(metric) {
+  return { revenue:'Revenue ($)', transactions:'Transactions', units:'Units Sold', aov:'Avg Order Value ($)' }[metric] || metric;
+}
+
+function groupByLabel(gb) {
+  return { month:'Month', category:'Category', gender:'Gender', ageGroup:'Age Group',
+           dow:'Day of Week', priceBand:'Price Band', quantity:'Qty per Transaction' }[gb] || gb;
+}
+
+/* ── Aggregate data for a given groupBy + metric ── */
+function aggregateBuilder(data, groupBy, metric, labels) {
+  const sums  = {};
+  const cnts  = {};
+  labels.forEach(l => { sums[l] = 0; cnts[l] = 0; });
+
+  data.forEach(t => {
+    const key = getDimKey(t, groupBy);
+    const label = groupBy === 'month' ? MONTHS[key]
+                : groupBy === 'dow'   ? DAYS[key]
+                : String(key);
+    if (sums[label] !== undefined) {
+      sums[label] += getMetricValue(t, metric);
+      cnts[label]++;
+    }
+  });
+
+  return labels.map(l => {
+    if (metric === 'aov') return cnts[l] ? Math.round(sums[l] / cnts[l]) : 0;
+    return Math.round(sums[l]);
+  });
+}
+
+/* ── Scatter: age vs total ── */
+function scatterData(data) {
+  return data.map(t => [t.age, t.total]);
+}
+
+/* ── Colour series for builder charts ── */
+const BC_COLOURS = [C.blue, C.teal, C.green, C.yellow, C.purple, C.red, C.blue, C.teal, C.green, C.yellow, C.purple, C.red];
+
+let builderCharts = [];  // track instances so we can resize them
+
+/* ── Generate a single builder chart card ── */
+function generateBuilderChart() {
+  const chartType = document.getElementById('bc-type').value;
+  const metric    = document.getElementById('bc-metric').value;
+  const groupBy   = document.getElementById('bc-groupby').value;
+  const fromMonth = parseInt(document.getElementById('bc-from').value, 10);
+  const toMonth   = parseInt(document.getElementById('bc-to').value, 10);
+
+  const cats    = bcSelected('bc-chips-category');
+  const genders = bcSelected('bc-chips-gender');
+  const ages    = bcSelected('bc-chips-age');
+
+  // Validate
+  if (!cats.length || !genders.length || !ages.length) {
+    alert('Please select at least one option in each filter group.');
+    return;
+  }
+
+  // Filter dataset
+  const ageRaw = ages.map(a => a === 'Senior' ? 'Old' : a);
+  const filtered = transactions.filter(t => {
+    const m = parseInt(t.date.split('/')[0], 10) - 1;
+    if (m < Math.min(fromMonth, toMonth) || m > Math.max(fromMonth, toMonth)) return false;
+    if (!cats.includes(t.category)) return false;
+    if (!genders.includes(t.gender)) return false;
+    if (!ageRaw.includes(t.ageGroup)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    alert('No data matches these parameters. Try broader filters.');
+    return;
+  }
+
+  const labels = dimLabels(groupBy, filtered);
+  const values = (chartType === 'scatter')
+    ? scatterData(filtered)
+    : aggregateBuilder(filtered, groupBy, metric, labels);
+
+  // Describe the chart
+  const from = MONTHS[Math.min(fromMonth, toMonth)];
+  const to   = MONTHS[Math.max(fromMonth, toMonth)];
+  const title = `${metricLabel(metric)} by ${groupByLabel(groupBy)}`;
+  const sub   = `${from}–${to} · ${cats.join(', ')} · ${genders.join(' & ')} · ${ages.join(', ')} · ${filtered.length.toLocaleString()} txns`;
+
+  // Build card
+  const cardId  = 'bc-chart-' + Date.now();
+  const card = document.createElement('div');
+  card.className = 'builder-chart-card';
+  card.innerHTML = `<h4>${title}</h4><p class="sub">${sub}</p><div class="builder-chart-mount" id="${cardId}"></div>`;
+
+  // Remove empty state if present
+  const results = document.getElementById('builder-results');
+  const empty = results.querySelector('.builder-empty');
+  if (empty) empty.remove();
+
+  // Update grid layout
+  results.appendChild(card);
+  const cardCount = results.querySelectorAll('.builder-chart-card').length;
+  results.classList.toggle('single', cardCount === 1);
+
+  // Init ECharts after card is in DOM
+  requestAnimationFrame(() => {
+    const inst = echarts.init(document.getElementById(cardId));
+    builderCharts.push(inst);
+
+    const isPie    = chartType === 'pie' || chartType === 'donut';
+    const isHBar   = chartType === 'hbar';
+    const isScatter= chartType === 'scatter';
+
+    let option = {};
+
+    if (isPie) {
+      option = {
+        animation: true,
+        tooltip: { ...tt, trigger:'item', formatter: p => `<b>${p.name}</b><br/>${p.percent}%<br/>${metricLabel(metric)}: ${p.value.toLocaleString()}` },
+        legend: { bottom: 4, left:'center', itemWidth:10, itemHeight:10, textStyle:{color:C.text, fontSize:10} },
+        series: [{
+          type: 'pie',
+          radius: chartType === 'donut' ? ['38%','65%'] : '62%',
+          center: ['50%','46%'],
+          avoidLabelOverlap: true,
+          label: { show:true, formatter:'{b}\n{d}%', fontSize:11, color:C.text },
+          labelLine: { length:8, length2:6 },
+          data: labels.map((l, i) => ({ value: values[i], name: l, itemStyle:{ color: BC_COLOURS[i] } }))
+        }]
+      };
+    } else if (isScatter) {
+      option = {
+        animation: true,
+        tooltip: { ...tt, trigger:'item', formatter: p => `Age: ${p.data[0]}<br/>Total: $${p.data[1].toLocaleString()}` },
+        grid: { left:52, right:16, top:16, bottom:36 },
+        xAxis: { type:'value', name:'Age', nameLocation:'middle', nameGap:24, nameTextStyle:{color:C.muted,fontSize:10}, ...axisStyle, axisLabel:{...axisStyle.axisLabel, color:C.text} },
+        yAxis: { type:'value', name:'Total ($)', nameTextStyle:{color:C.muted,fontSize:10}, ...axisStyle, axisLabel:{...axisStyle.axisLabel, formatter:v=>'$'+(v/1000).toFixed(0)+'k'} },
+        series: [{ type:'scatter', symbolSize:5, itemStyle:{ color:C.blue, opacity:0.6 }, data: values }]
+      };
+    } else if (isHBar) {
+      option = {
+        animation: true,
+        tooltip: { ...tt, trigger:'axis', axisPointer:{type:'shadow'} },
+        grid: { left:80, right:60, top:16, bottom:24 },
+        xAxis: { type:'value', ...axisStyle, axisLabel:{...axisStyle.axisLabel, formatter:v => metric==='revenue'||metric==='aov' ? '$'+(v/1000).toFixed(0)+'k' : String(v)} },
+        yAxis: { type:'category', data:labels, ...axisStyle, axisLabel:{...axisStyle.axisLabel, color:C.text} },
+        series: [{
+          type:'bar', barMaxWidth:32,
+          data: values.map((v,i) => ({ value:v, itemStyle:{color:BC_COLOURS[i % BC_COLOURS.length], borderRadius:[0,4,4,0]} })),
+          label: { show:true, position:'right', fontSize:10, color:C.muted,
+            formatter: p => metric==='revenue'||metric==='aov' ? '$'+p.value.toLocaleString() : String(p.value) }
+        }]
+      };
+    } else {
+      // bar, line, area
+      const isLine = chartType === 'line' || chartType === 'area';
+      const yFmt = metric === 'revenue' || metric === 'aov'
+        ? v => '$' + (v/1000).toFixed(0) + 'k'
+        : v => String(v);
+      option = {
+        animation: true,
+        tooltip: { ...tt, trigger:'axis', axisPointer:{type: isLine ? 'line' : 'shadow'} },
+        grid: { left:56, right:16, top:16, bottom:36 },
+        xAxis: { type:'category', data:labels, boundaryGap:!isLine, ...axisStyle, axisLabel:{...axisStyle.axisLabel, color:C.text, rotate: labels.length > 6 ? 20 : 0} },
+        yAxis: { type:'value', ...axisStyle, axisLabel:{...axisStyle.axisLabel, formatter:yFmt} },
+        series: [{
+          type: isLine ? 'line' : 'bar',
+          smooth: isLine,
+          symbol: isLine ? 'circle' : undefined,
+          symbolSize: 6,
+          barMaxWidth: 44,
+          lineStyle: isLine ? { color:C.blue, width:2.5 } : undefined,
+          itemStyle: { color: BC_COLOURS[0], borderRadius: isLine ? undefined : [3,3,0,0] },
+          areaStyle: chartType === 'area' ? { color:{ type:'linear', x:0, y:0, x2:0, y2:1,
+            colorStops:[{offset:0,color:'rgba(15,98,254,0.18)'},{offset:1,color:'rgba(15,98,254,0.01)'}] } } : undefined,
+          data: values,
+          label: isLine
+            ? { show:true, position:'top', fontSize:9, color:C.muted }
+            : { show:true, position:'top', fontSize:10, color:C.muted,
+                formatter: p => metric==='revenue'||metric==='aov' ? '$'+p.value.toLocaleString() : String(p.value) }
+        }]
+      };
+    }
+
+    inst.setOption(option);
+  });
+}
+
+/* ── Clear builder results ── */
+document.getElementById('builder-clear-btn').addEventListener('click', () => {
+  builderCharts.forEach(c => c.dispose());
+  builderCharts = [];
+  const results = document.getElementById('builder-results');
+  results.innerHTML = `<div class="builder-empty"><span>&#128202;</span>Configure your parameters above and click <strong>Generate Chart</strong></div>`;
+  results.classList.remove('single');
+});
+
+/* ── Generate button ── */
+document.getElementById('build-btn').addEventListener('click', generateBuilderChart);
+
+/* ── Include builder charts in resize ── */
+window.addEventListener('resize', () => { builderCharts.forEach(c => c.resize()); });
+</script>
+</body>
+</html>
