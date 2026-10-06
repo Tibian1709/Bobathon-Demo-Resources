@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Service Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --border: #dde1e7;
+      --text: #1d2125;
+      --muted: #6b7280;
+      --accent: #0f62fe;
+      --red: #da1e28;
+      --amber: #f1620a;
+      --green: #198038;
+      --red-bg: #fff1f1;
+      --amber-bg: #fff7f0;
+      --green-bg: #f0faf0;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--text);
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 13px; color: #a0aab4; }
+
+    .toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .main { padding: 24px; max-width: 1100px; }
+
+    /* Banners */
+    .banners { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .banner {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border-left: 4px solid;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .banner.red    { background: var(--red-bg);   border-color: var(--red);   color: var(--red); }
+    .banner.amber  { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
+    .banner.green  { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    /* Cards / table */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.red    { background: var(--red-bg);   color: var(--red); }
+    .badge.amber  { background: var(--amber-bg); color: var(--amber); }
+    .badge.green  { background: var(--green-bg); color: var(--green); }
+
+    /* Buttons */
+    button { cursor: pointer; }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 13px;
+      color: var(--text);
+    }
+    .btn:hover { background: var(--bg); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: #0353e9; }
+    .btn.danger { color: var(--red); border-color: var(--red); }
+    .btn.danger:hover { background: var(--red-bg); }
+    .btn.sm { padding: 4px 10px; font-size: 12px; }
+
+    /* Form / modal */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 24px;
+      width: 420px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: var(--muted); }
+    .field input, .field select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      background: var(--bg);
+    }
+    .field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+    /* Section layout */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Fuel economy */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat { background: var(--bg); border-radius: 6px; padding: 14px; }
+    .stat .value { font-size: 22px; font-weight: 700; }
+    .stat .label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+
+    /* Charts */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
+    .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .chart-wrap h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+    .chart-wrap svg { display: block; width: 100%; }
+    .chart-legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+    .chart-legend span { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .chart-legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
+
+    @media (max-width: 600px) {
+      .main { padding: 12px; }
+      .toolbar { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🚗 Vehicle Service Tracker</h1>
+    <span>WOF · Rego · Service · Fuel — all in one place</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn primary" id="btnAddEntry">+ Add Entry</button>
+  <button class="btn primary" id="btnAddFuel">+ Fuel Fill-up</button>
+  <button class="btn" id="btnExportJSON">Export JSON</button>
+  <button class="btn" id="btnImportJSON">Import JSON</button>
+  <input type="file" id="importInput" accept=".json" style="display:none" />
+</div>
+
+<div class="main">
+  <div class="banners" id="banners"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-section="dashboard">Dashboard</button>
+    <button class="tab" data-section="fuel">Fuel Log</button>
+    <button class="tab" data-section="charts">Charts</button>
+    <button class="tab" data-section="entries">All Entries</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="section active" id="section-dashboard">
+    <div id="vehicleCards"></div>
+  </div>
+
+  <!-- Fuel -->
+  <div class="section" id="section-fuel">
+    <div class="stat-grid" id="fuelStats"></div>
+    <div class="card">
+      <h2>Fuel Fill-up Log</h2>
+      <div id="fuelTable"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="section" id="section-charts">
+    <div class="chart-grid">
+      <div class="chart-wrap">
+        <h3>Fuel Economy Trend (L/100km)</h3>
+        <svg id="chartEconomy" viewBox="0 0 400 200" height="200"></svg>
+        <div class="chart-legend" id="legendEconomy"></div>
+      </div>
+      <div class="chart-wrap">
+        <h3>Fuel Cost per Fill-up ($)</h3>
+        <svg id="chartCost" viewBox="0 0 400 200" height="200"></svg>
+        <div class="chart-legend" id="legendCost"></div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-wrap">
+        <h3>Litres per Fill-up</h3>
+        <svg id="chartLitres" viewBox="0 0 400 200" height="200"></svg>
+        <div class="chart-legend" id="legendLitres"></div>
+      </div>
+      <div class="chart-wrap">
+        <h3>Odometer Reading (km)</h3>
+        <svg id="chartOdo" viewBox="0 0 400 200" height="200"></svg>
+        <div class="chart-legend" id="legendOdo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Entries -->
+  <div class="section" id="section-entries">
+    <div class="card">
+      <h2>All Service Entries</h2>
+      <div id="entriesTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Entry Modal -->
+<div class="overlay" id="entryModal">
+  <div class="modal">
+    <h2 id="entryModalTitle">Add Service Entry</h2>
+    <div class="field">
+      <label>Vehicle</label>
+      <select id="eVehicle">
+        <option value="HiAce">HiAce</option>
+        <option value="Polo">Polo</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select id="eType">
+        <option value="WOF">WOF</option>
+        <option value="Rego">Rego</option>
+        <option value="Service">Service</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Due Date</label>
+      <input type="date" id="eDueDate" />
+    </div>
+    <div class="field">
+      <label>Service Interval (km, optional)</label>
+      <input type="number" id="eInterval" placeholder="e.g. 10000" />
+    </div>
+    <div class="field">
+      <label>Current Odometer (km, optional)</label>
+      <input type="number" id="eOdometer" placeholder="e.g. 85000" />
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="eNotes" placeholder="Optional notes" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="entryCancel">Cancel</button>
+      <button class="btn primary" id="entrySave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Fuel Modal -->
+<div class="overlay" id="fuelModal">
+  <div class="modal">
+    <h2>Add Fuel Fill-up</h2>
+    <div class="field">
+      <label>Vehicle</label>
+      <select id="fVehicle">
+        <option value="HiAce">HiAce</option>
+        <option value="Polo">Polo</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="fDate" />
+    </div>
+    <div class="field">
+      <label>Litres</label>
+      <input type="number" id="fLitres" step="0.01" placeholder="e.g. 45.5" />
+    </div>
+    <div class="field">
+      <label>Odometer (km)</label>
+      <input type="number" id="fOdometer" placeholder="e.g. 85000" />
+    </div>
+    <div class="field">
+      <label>Cost ($, optional)</label>
+      <input type="number" id="fCost" step="0.01" placeholder="e.g. 95.20" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="fuelCancel">Cancel</button>
+      <button class="btn primary" id="fuelSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Storage helpers ──────────────────────────────────────────────────────
+  const STORE_ENTRIES = 'vt_entries';
+  const STORE_FUEL    = 'vt_fuel';
+
+  function load(key)        { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } }
+  function save(key, data)  { localStorage.setItem(key, JSON.stringify(data)); }
+
+  let entries = load(STORE_ENTRIES);
+  let fuels   = load(STORE_FUEL);
+  let editId  = null;
+
+  // ── Utilities ────────────────────────────────────────────────────────────
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const diff = new Date(dateStr) - new Date(new Date().toDateString());
+    return Math.round(diff / 86400000);
+  }
+
+  function statusFor(days) {
+    if (days === null) return 'green';
+    if (days < 0)     return 'red';
+    if (days <= 30)   return 'amber';
+    return 'green';
+  }
+
+  function statusLabel(days) {
+    if (days === null) return '—';
+    if (days < 0)  return `Overdue by ${Math.abs(days)}d`;
+    if (days === 0) return 'Due today';
+    return `${days}d remaining`;
+  }
+
+  function fmt(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-NZ', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  // ── ICS export ───────────────────────────────────────────────────────────
+  function exportICS(entry) {
+    const d = entry.dueDate.replace(/-/g, '');
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//VehicleTracker//EN',
+      'BEGIN:VEVENT',
+      `UID:${entry.id}@vehicletracker`,
+      `DTSTART;VALUE=DATE:${d}`,
+      `DTEND;VALUE=DATE:${d}`,
+      `SUMMARY:${entry.vehicle} ${entry.type} due`,
+      `DESCRIPTION:${entry.notes || ''}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${entry.vehicle}_${entry.type}.ics`;
+    a.click();
+  }
+
+  // ── Fuel economy ─────────────────────────────────────────────────────────
+  function calcEconomy(vehicle) {
+    const log = fuels.filter(f => f.vehicle === vehicle).sort((a,b) => a.odometer - b.odometer);
+    if (log.length < 2) return null;
+    const totalKm = log[log.length-1].odometer - log[0].odometer;
+    const totalL  = log.slice(1).reduce((s,f) => s + f.litres, 0);
+    if (totalKm <= 0 || totalL <= 0) return null;
+    return (totalL / totalKm * 100).toFixed(1);
+  }
+
+  // ── Render: Banners ───────────────────────────────────────────────────────
+  function renderBanners() {
+    const el = document.getElementById('banners');
+    const alerts = [];
+    entries.forEach(e => {
+      const days = daysUntil(e.dueDate);
+      const s = statusFor(days);
+      if (s === 'red' || s === 'amber') {
+        alerts.push({ s, msg: `${e.vehicle} — ${e.type}: ${statusLabel(days)} (due ${fmt(e.dueDate)})` });
+      }
+    });
+    if (alerts.length === 0) {
+      el.innerHTML = `<div class="banner green">✓ All vehicles up to date — nothing due within 30 days.</div>`;
+      return;
+    }
+    el.innerHTML = alerts.map(a =>
+      `<div class="banner ${a.s}">${a.s === 'red' ? '⚠' : '●'} ${a.msg}</div>`
+    ).join('');
+  }
+
+  // ── Render: Dashboard cards ───────────────────────────────────────────────
+  function renderDashboard() {
+    const vehicles = ['HiAce', 'Polo'];
+    const el = document.getElementById('vehicleCards');
+    el.innerHTML = vehicles.map(v => {
+      const ve = entries.filter(e => e.vehicle === v);
+      const rows = ve.length === 0
+        ? `<p class="empty">No entries yet for ${v}.</p>`
+        : `<table>
+            <thead><tr><th>Type</th><th>Due</th><th>Status</th><th>Odometer</th><th></th></tr></thead>
+            <tbody>${ve.map(e => {
+              const days = daysUntil(e.dueDate);
+              const s = statusFor(days);
+              return `<tr>
+                <td><strong>${e.type}</strong>${e.notes ? `<br><span style="color:var(--muted);font-size:11px">${e.notes}</span>` : ''}</td>
+                <td>${fmt(e.dueDate)}</td>
+                <td><span class="badge ${s}">${statusLabel(days)}</span></td>
+                <td>${e.odometer ? e.odometer.toLocaleString() + ' km' : '—'}</td>
+                <td style="white-space:nowrap">
+                  ${e.dueDate ? `<button class="btn sm" onclick="exportICS(entries.find(x=>x.id==='${e.id}'))">📅</button> ` : ''}
+                  <button class="btn sm" onclick="openEdit('${e.id}')">Edit</button>
+                  <button class="btn sm danger" onclick="deleteEntry('${e.id}')">✕</button>
+                </td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`;
+
+      const econ = calcEconomy(v);
+      const lastFuel = fuels.filter(f => f.vehicle === v).sort((a,b) => new Date(b.date)-new Date(a.date))[0];
+
+      return `<div class="card">
+        <h2>🚐 ${v}</h2>
+        ${rows}
+        <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+          Fuel economy: <strong>${econ ? econ + ' L/100km' : 'not enough data'}</strong>
+          ${lastFuel ? ` &nbsp;·&nbsp; Last fill-up: ${fmt(lastFuel.date)} — ${lastFuel.litres}L` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Render: Fuel log ─────────────────────────────────────────────────────
+  function renderFuel() {
+    const vehicles = ['HiAce', 'Polo'];
+    const statsEl = document.getElementById('fuelStats');
+    statsEl.innerHTML = vehicles.map(v => {
+      const econ = calcEconomy(v);
+      return `<div class="stat"><div class="value">${econ ? econ : '—'}</div><div class="label">${v} L/100km</div></div>`;
+    }).join('');
+
+    const el = document.getElementById('fuelTable');
+    if (fuels.length === 0) { el.innerHTML = `<p class="empty">No fuel entries yet.</p>`; return; }
+    const sorted = [...fuels].sort((a,b) => new Date(b.date)-new Date(a.date));
+    el.innerHTML = `<table>
+      <thead><tr><th>Vehicle</th><th>Date</th><th>Litres</th><th>Odometer</th><th>Cost</th><th></th></tr></thead>
+      <tbody>${sorted.map(f => `<tr>
+        <td>${f.vehicle}</td>
+        <td>${fmt(f.date)}</td>
+        <td>${f.litres} L</td>
+        <td>${f.odometer.toLocaleString()} km</td>
+        <td>${f.cost ? '$' + Number(f.cost).toFixed(2) : '—'}</td>
+        <td><button class="btn sm danger" onclick="deleteFuel('${f.id}')">✕</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  // ── Render: All entries ───────────────────────────────────────────────────
+  function renderEntries() {
+    const el = document.getElementById('entriesTable');
+    if (entries.length === 0) { el.innerHTML = `<p class="empty">No entries yet.</p>`; return; }
+    const sorted = [...entries].sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate));
+    el.innerHTML = `<table>
+      <thead><tr><th>Vehicle</th><th>Type</th><th>Due</th><th>Status</th><th>Odometer</th><th>Notes</th><th></th></tr></thead>
+      <tbody>${sorted.map(e => {
+        const days = daysUntil(e.dueDate);
+        const s = statusFor(days);
+        return `<tr>
+          <td>${e.vehicle}</td>
+          <td>${e.type}</td>
+          <td>${fmt(e.dueDate)}</td>
+          <td><span class="badge ${s}">${statusLabel(days)}</span></td>
+          <td>${e.odometer ? e.odometer.toLocaleString() + ' km' : '—'}</td>
+          <td>${e.notes || '—'}</td>
+          <td style="white-space:nowrap">
+            ${e.dueDate ? `<button class="btn sm" onclick="exportICS(entries.find(x=>x.id==='${e.id}'))">📅</button> ` : ''}
+            <button class="btn sm" onclick="openEdit('${e.id}')">Edit</button>
+            <button class="btn sm danger" onclick="deleteEntry('${e.id}')">✕</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  // ── Charts (pure SVG, no libraries) ──────────────────────────────────────
+  const COLORS = { HiAce: '#0f62fe', Polo: '#7c5cd8' };
+  const PAD = { top: 16, right: 16, bottom: 32, left: 44 };
+  const W = 400, H = 200;
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top  - PAD.bottom;
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v));
+    return el;
+  }
+
+  function drawAxes(svg, yMin, yMax, yTicks, xLabels) {
+    // y-axis line
+    svg.appendChild(svgEl('line', { x1: PAD.left, y1: PAD.top, x2: PAD.left, y2: PAD.top + CH, stroke: '#dde1e7', 'stroke-width': 1 }));
+    // x-axis line
+    svg.appendChild(svgEl('line', { x1: PAD.left, y1: PAD.top + CH, x2: PAD.left + CW, y2: PAD.top + CH, stroke: '#dde1e7', 'stroke-width': 1 }));
+
+    // y gridlines + labels
+    for (let i = 0; i <= yTicks; i++) {
+      const val = yMin + (yMax - yMin) * (i / yTicks);
+      const y   = PAD.top + CH - (CH * i / yTicks);
+      const gl  = svgEl('line', { x1: PAD.left, y1: y, x2: PAD.left + CW, y2: y, stroke: '#f0f0f0', 'stroke-width': 1 });
+      svg.appendChild(gl);
+      const lbl = svgEl('text', { x: PAD.left - 6, y: y + 4, 'text-anchor': 'end', 'font-size': '9', fill: '#6b7280' });
+      lbl.textContent = Number(val.toFixed(1)).toString();
+      svg.appendChild(lbl);
+    }
+
+    // x labels
+    xLabels.forEach((lbl, i) => {
+      const x = PAD.left + (i / (xLabels.length - 1 || 1)) * CW;
+      const t = svgEl('text', { x, y: PAD.top + CH + 14, 'text-anchor': 'middle', 'font-size': '9', fill: '#6b7280' });
+      t.textContent = lbl;
+      svg.appendChild(t);
+    });
+  }
+
+  function drawLine(svg, points, color) {
+    if (points.length < 2) return;
+    const d = points.map((p,i) => `${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+    svg.appendChild(svgEl('path', { d, stroke: color, 'stroke-width': '2', fill: 'none', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    points.forEach(p => svg.appendChild(svgEl('circle', { cx: p.x, cy: p.y, r: '3', fill: color })));
+  }
+
+  function drawBars(svg, groups, color, totalGroups, groupIdx, barW) {
+    const groupW = CW / (groups.length || 1);
+    groups.forEach((g, i) => {
+      const x = PAD.left + i * groupW + (groupIdx * barW) + (groupW - totalGroups * barW) / 2;
+      svg.appendChild(svgEl('rect', { x, y: g.y, width: barW - 2, height: g.h, fill: color, rx: 2 }));
+    });
+  }
+
+  function scaleY(val, yMin, yMax) {
+    return PAD.top + CH - ((val - yMin) / (yMax - yMin || 1)) * CH;
+  }
+
+  function renderCharts() {
+    const vehicles = ['HiAce', 'Polo'];
+
+    // ── Economy trend (rolling per consecutive fill-up pair) ─────────────────
+    (function() {
+      const svg = document.getElementById('chartEconomy');
+      svg.innerHTML = '';
+      const allSeries = vehicles.map(v => {
+        const log = fuels.filter(f => f.vehicle === v).sort((a,b) => a.odometer - b.odometer);
+        const pts = [];
+        for (let i = 1; i < log.length; i++) {
+          const km = log[i].odometer - log[i-1].odometer;
+          if (km > 0) pts.push({ label: fmt(log[i].date), val: log[i].litres / km * 100 });
+        }
+        return { v, pts };
+      }).filter(s => s.pts.length > 0);
+
+      if (allSeries.length === 0) { svg.innerHTML = `<text x="200" y="100" text-anchor="middle" font-size="12" fill="#6b7280">No data yet</text>`; return; }
+
+      const allVals = allSeries.flatMap(s => s.pts.map(p => p.val));
+      const yMin = Math.max(0, Math.min(...allVals) * 0.85);
+      const yMax = Math.max(...allVals) * 1.1;
+      const allLabels = [...new Set(allSeries.flatMap(s => s.pts.map(p => p.label)))].slice(-6);
+      drawAxes(svg, yMin, yMax, 4, allLabels);
+
+      allSeries.forEach(({ v, pts }) => {
+        const points = pts.slice(-6).map((p, i, arr) => ({
+          x: PAD.left + (i / (arr.length - 1 || 1)) * CW,
+          y: scaleY(p.val, yMin, yMax)
+        }));
+        drawLine(svg, points, COLORS[v] || '#888');
+      });
+
+      document.getElementById('legendEconomy').innerHTML = allSeries.map(({ v }) =>
+        `<span><i style="background:${COLORS[v]||'#888'};height:3px"></i>${v}</span>`).join('');
+    })();
+
+    // ── Shared bar chart helper ───────────────────────────────────────────────
+    function makeBarChart(svgId, legendId, getFn) {
+      const svg = document.getElementById(svgId);
+      svg.innerHTML = '';
+      const allSeries = vehicles.map(v => {
+        const log = fuels.filter(f => f.vehicle === v).sort((a,b) => new Date(a.date)-new Date(b.date)).slice(-6);
+        return { v, log };
+      });
+      const allVals = allSeries.flatMap(({ log }) => log.map(f => getFn(f))).filter(Boolean);
+      if (allVals.length === 0) { svg.innerHTML = `<text x="200" y="100" text-anchor="middle" font-size="12" fill="#6b7280">No data yet</text>`; return; }
+
+      const yMin = 0;
+      const yMax = Math.max(...allVals) * 1.15;
+      const maxLen = Math.max(...allSeries.map(s => s.log.length));
+      const xLabels = allSeries.find(s => s.log.length === maxLen)?.log.map(f => fmt(f.date).slice(0,6)) || [];
+      drawAxes(svg, yMin, yMax, 4, xLabels);
+
+      const barW = Math.min(28, CW / (maxLen * vehicles.length + 1));
+      allSeries.forEach(({ v, log }, gi) => {
+        const groups = log.map((f, i) => {
+          const val = getFn(f) || 0;
+          return { y: scaleY(val, yMin, yMax), h: Math.max(1, scaleY(yMin, yMin, yMax) - scaleY(val, yMin, yMax)) };
+        });
+        drawBars(svg, groups, COLORS[v] || '#888', vehicles.length, gi, barW);
+      });
+
+      document.getElementById(legendId).innerHTML = vehicles.map(v =>
+        `<span><i style="background:${COLORS[v]||'#888'};height:10px;width:10px;border-radius:2px"></i>${v}</span>`).join('');
+    }
+
+    makeBarChart('chartCost',   'legendCost',   f => f.cost);
+    makeBarChart('chartLitres', 'legendLitres', f => f.litres);
+
+    // ── Odometer line ─────────────────────────────────────────────────────────
+    (function() {
+      const svg = document.getElementById('chartOdo');
+      svg.innerHTML = '';
+      const allSeries = vehicles.map(v => {
+        const log = fuels.filter(f => f.vehicle === v).sort((a,b) => new Date(a.date)-new Date(b.date)).slice(-6);
+        return { v, log };
+      }).filter(s => s.log.length > 0);
+
+      if (allSeries.length === 0) { svg.innerHTML = `<text x="200" y="100" text-anchor="middle" font-size="12" fill="#6b7280">No data yet</text>`; return; }
+
+      const allOdo  = allSeries.flatMap(s => s.log.map(f => f.odometer));
+      const yMin = Math.min(...allOdo) * 0.998;
+      const yMax = Math.max(...allOdo) * 1.002;
+      const allLabels = [...new Set(allSeries.flatMap(s => s.log.map(f => fmt(f.date).slice(0,6))))];
+      drawAxes(svg, yMin, yMax, 4, allLabels.slice(-6));
+
+      allSeries.forEach(({ v, log }) => {
+        const points = log.map((f, i, arr) => ({
+          x: PAD.left + (i / (arr.length - 1 || 1)) * CW,
+          y: scaleY(f.odometer, yMin, yMax)
+        }));
+        drawLine(svg, points, COLORS[v] || '#888');
+      });
+
+      document.getElementById('legendOdo').innerHTML = allSeries.map(({ v }) =>
+        `<span><i style="background:${COLORS[v]||'#888'};height:3px"></i>${v}</span>`).join('');
+    })();
+  }
+
+  // ── Master render ─────────────────────────────────────────────────────────
+  function renderAll() {
+    renderBanners();
+    renderDashboard();
+    renderFuel();
+    renderEntries();
+    renderCharts();
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('section-' + tab.dataset.section).classList.add('active');
+    });
+  });
+
+  // ── Entry modal ───────────────────────────────────────────────────────────
+  function openAdd() {
+    editId = null;
+    document.getElementById('entryModalTitle').textContent = 'Add Service Entry';
+    ['eVehicle','eType','eDueDate','eInterval','eOdometer','eNotes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+    });
+    document.getElementById('entryModal').classList.add('open');
+  }
+
+  function openEdit(id) {
+    editId = id;
+    const e = entries.find(x => x.id === id);
+    if (!e) return;
+    document.getElementById('entryModalTitle').textContent = 'Edit Entry';
+    document.getElementById('eVehicle').value  = e.vehicle || 'HiAce';
+    document.getElementById('eType').value     = e.type    || 'WOF';
+    document.getElementById('eDueDate').value  = e.dueDate || '';
+    document.getElementById('eInterval').value = e.interval || '';
+    document.getElementById('eOdometer').value = e.odometer || '';
+    document.getElementById('eNotes').value    = e.notes   || '';
+    document.getElementById('entryModal').classList.add('open');
+  }
+
+  document.getElementById('btnAddEntry').addEventListener('click', openAdd);
+  document.getElementById('entryCancel').addEventListener('click', () => document.getElementById('entryModal').classList.remove('open'));
+
+  document.getElementById('entrySave').addEventListener('click', () => {
+    const dueDate  = document.getElementById('eDueDate').value;
+    const interval = parseInt(document.getElementById('eInterval').value) || null;
+    const odometer = parseInt(document.getElementById('eOdometer').value) || null;
+    const entry = {
+      id:       editId || uid(),
+      vehicle:  document.getElementById('eVehicle').value,
+      type:     document.getElementById('eType').value,
+      dueDate,
+      interval,
+      odometer,
+      notes:    document.getElementById('eNotes').value.trim()
+    };
+    if (editId) {
+      entries = entries.map(e => e.id === editId ? entry : e);
+    } else {
+      entries.push(entry);
+    }
+    save(STORE_ENTRIES, entries);
+    document.getElementById('entryModal').classList.remove('open');
+    renderAll();
+  });
+
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    entries = entries.filter(e => e.id !== id);
+    save(STORE_ENTRIES, entries);
+    renderAll();
+  }
+
+  // ── Fuel modal ────────────────────────────────────────────────────────────
+  document.getElementById('btnAddFuel').addEventListener('click', () => {
+    ['fDate','fLitres','fOdometer','fCost'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fVehicle').selectedIndex = 0;
+    document.getElementById('fuelModal').classList.add('open');
+  });
+  document.getElementById('fuelCancel').addEventListener('click', () => document.getElementById('fuelModal').classList.remove('open'));
+
+  document.getElementById('fuelSave').addEventListener('click', () => {
+    const litres   = parseFloat(document.getElementById('fLitres').value);
+    const odometer = parseInt(document.getElementById('fOdometer').value);
+    if (!litres || !odometer) { alert('Litres and odometer are required.'); return; }
+    fuels.push({
+      id:       uid(),
+      vehicle:  document.getElementById('fVehicle').value,
+      date:     document.getElementById('fDate').value,
+      litres,
+      odometer,
+      cost:     parseFloat(document.getElementById('fCost').value) || null
+    });
+    save(STORE_FUEL, fuels);
+    document.getElementById('fuelModal').classList.remove('open');
+    renderAll();
+  });
+
+  function deleteFuel(id) {
+    if (!confirm('Delete this fuel entry?')) return;
+    fuels = fuels.filter(f => f.id !== id);
+    save(STORE_FUEL, fuels);
+    renderAll();
+  }
+
+  // ── Export / Import JSON ──────────────────────────────────────────────────
+  document.getElementById('btnExportJSON').addEventListener('click', () => {
+    const data = JSON.stringify({ entries, fuels }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vehicle-tracker-backup.json';
+    a.click();
+  });
+
+  document.getElementById('btnImportJSON').addEventListener('click', () => document.getElementById('importInput').click());
+  document.getElementById('importInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (!parsed.entries || !parsed.fuels) throw new Error('Invalid format');
+        if (!confirm(`Import ${parsed.entries.length} entries and ${parsed.fuels.length} fuel records? This will replace current data.`)) return;
+        entries = parsed.entries;
+        fuels   = parsed.fuels;
+        save(STORE_ENTRIES, entries);
+        save(STORE_FUEL, fuels);
+        renderAll();
+      } catch {
+        alert('Could not import — invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // ── Seed dummy data (only if localStorage is empty) ──────────────────────
+  function seedDummyData() {
+    if (entries.length > 0 || fuels.length > 0) return;
+
+    const today = new Date();
+    const rel = days => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+
+    entries = [
+      { id: uid(), vehicle: 'HiAce',  type: 'WOF',     dueDate: rel(-15),  interval: null,  odometer: 112400, notes: 'Failed on front wiper blades' },
+      { id: uid(), vehicle: 'HiAce',  type: 'Rego',    dueDate: rel(22),   interval: null,  odometer: 112400, notes: '' },
+      { id: uid(), vehicle: 'HiAce',  type: 'Service', dueDate: rel(45),   interval: 10000, odometer: 112400, notes: 'Oil & filter due at 115,000 km' },
+      { id: uid(), vehicle: 'Polo',   type: 'WOF',     dueDate: rel(90),   interval: null,  odometer: 67800,  notes: '' },
+      { id: uid(), vehicle: 'Polo',   type: 'Rego',    dueDate: rel(-3),   interval: null,  odometer: 67800,  notes: 'Renewal notice received' },
+      { id: uid(), vehicle: 'Polo',   type: 'Service', dueDate: rel(180),  interval: 15000, odometer: 67800,  notes: 'Spark plugs also due' },
+    ];
+
+    fuels = [
+      { id: uid(), vehicle: 'HiAce', date: rel(-90), litres: 62.4, odometer: 109800, cost: 138.50 },
+      { id: uid(), vehicle: 'HiAce', date: rel(-60), litres: 58.1, odometer: 110650, cost: 127.40 },
+      { id: uid(), vehicle: 'HiAce', date: rel(-30), litres: 60.7, odometer: 111520, cost: 134.20 },
+      { id: uid(), vehicle: 'HiAce', date: rel(-7),  litres: 55.9, odometer: 112400, cost: 122.90 },
+      { id: uid(), vehicle: 'Polo',  date: rel(-75), litres: 38.2, odometer: 65900,  cost:  84.30 },
+      { id: uid(), vehicle: 'Polo',  date: rel(-40), litres: 35.6, odometer: 66820,  cost:  78.10 },
+      { id: uid(), vehicle: 'Polo',  date: rel(-10), litres: 37.1, odometer: 67800,  cost:  81.60 },
+    ];
+
+    save(STORE_ENTRIES, entries);
+    save(STORE_FUEL, fuels);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  seedDummyData();
+  renderAll();
+</script>
+</body>
+</html>
